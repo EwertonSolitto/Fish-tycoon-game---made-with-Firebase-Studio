@@ -103,7 +103,7 @@ export function ClickableFishGame({
   );
 
   return (
-    <Card className="shadow-lg w-full max-w-md mx-auto bg-card/80 backdrop-blur-sm">
+    <Card className="shadow-lg w-full max-w-md md:max-w-2xl mx-auto bg-card/80 backdrop-blur-sm">
       <CardHeader className="pb-2 text-center">
         <CardTitle className="text-xl font-semibold tracking-tight">
           Quick Catch Minigame!

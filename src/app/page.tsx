@@ -163,10 +163,10 @@ export default function FishWorldTycoonPage() {
   return (
     <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 md:p-8 space-y-6 bg-background text-foreground">
       
-      {/* Top section: Title/Counter on Left, Minigame on Right */}
-      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+      {/* Top section: Title/Counter on Left (40%), Minigame on Right (60%) on medium screens and up */}
+      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-5 gap-6 items-start">
         {/* Left Column: Title and Fish Counter */}
-        <div className="flex flex-col space-y-4 items-center md:items-start">
+        <div className="flex flex-col space-y-4 items-center md:items-start md:col-span-2">
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-center md:text-left" style={{ color: 'hsl(var(--primary-foreground))', WebkitTextStroke: '1px hsl(var(--primary))', textShadow:'2px 2px 4px hsla(var(--primary), 0.5)'}}>
             Fish World Tycoon
           </h1>
@@ -174,7 +174,7 @@ export default function FishWorldTycoonPage() {
         </div>
 
         {/* Right Column: Minigame */}
-        <div className="flex justify-center md:justify-end w-full">
+        <div className="flex justify-center w-full md:col-span-3">
           <ClickableFishGame onFishCaught={handleMinigameFishCaught} />
         </div>
       </div>
