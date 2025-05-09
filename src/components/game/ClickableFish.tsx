@@ -1,0 +1,34 @@
+
+"use client";
+
+import type React from 'react';
+import { Fish as FishIcon } from 'lucide-react';
+
+interface ClickableFishProps {
+  id: string;
+  x: number; // percentage
+  y: number; // percentage
+  onClick: (id: string) => void;
+  size?: number; // Optional size for the fish in pixels
+}
+
+export function ClickableFish({ id, x, y, onClick, size = 32 }: ClickableFishProps) {
+  return (
+    <button
+      type="button"
+      aria-label="Click to catch fish"
+      onClick={() => onClick(id)}
+      className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary rounded-full p-1"
+      style={{
+        left: `${x}%`,
+        top: `${y}%`,
+        width: `${size}px`,
+        height: `${size}px`,
+      }}
+      data-testid={`clickable-fish-${id}`}
+      data-ai-hint="fish icon"
+    >
+      <FishIcon className="w-full h-full text-primary" />
+    </button>
+  );
+}

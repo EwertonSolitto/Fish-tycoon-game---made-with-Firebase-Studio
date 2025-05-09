@@ -11,12 +11,13 @@ import { HireableFishermanCard } from '@/components/game/HireableFishermanCard';
 import { PurchasableUpgradeCard } from '@/components/game/PurchasableUpgradeCard';
 import { FISHERMAN_TYPES, GLOBAL_UPGRADES_DATA, INITIAL_FISH_COUNT, GAME_TICK_INTERVAL_MS } from '@/config/gameData';
 import { RotateCcw } from 'lucide-react';
+import { ClickableFishGame } from '@/components/game/ClickableFishGame'; // Added import
 
 // State for each type of fisherman owned
 interface FishermanTypeState {
   quantity: number;
   level: number;
-  currentCrewUpgradeCost: number; // Cost to upgrade ALL fishermen of this type to the next level
+  currentCrewUpgradeCost: number; 
 }
 
 export default function FishWorldTycoonPage() {
@@ -99,7 +100,7 @@ export default function FishWorldTycoonPage() {
         [typeId]: Math.ceil(cost * fishermanType.costIncreaseFactor),
       }));
 
-      toast({ title: "Fisherman Hired!", description: `You hired a ${fishermanType.name}.` });
+      toast({ title: "Fisherman Hired!", description: `You hired a ${fishermanType.name}.`, variant: "default" });
     } else {
       toast({ title: "Not enough fish!", description: `You need ${Math.ceil(cost).toLocaleString('en-US')} fish to hire.`, variant: "destructive" });
     }
@@ -125,7 +126,7 @@ export default function FishWorldTycoonPage() {
         },
       }));
 
-      toast({ title: `${fishermanType.name} Crew Upgraded!`, description: `Your ${fishermanType.name} crew is now level ${currentTypeState.level + 1}.` });
+      toast({ title: `${fishermanType.name} Crew Upgraded!`, description: `Your ${fishermanType.name} crew is now level ${currentTypeState.level + 1}.`, variant: "default" });
     } else {
       toast({ title: "Not enough fish!", description: `You need ${Math.ceil(crewUpgradeCost).toLocaleString('en-US')} fish to upgrade your ${fishermanType.name} crew.`, variant: "destructive" });
     }
@@ -139,7 +140,7 @@ export default function FishWorldTycoonPage() {
       setFish(prevFish => prevFish - upgradeData.cost);
       setPurchasedUpgrades(prev => ({ ...prev, [upgradeId]: true }));
       setGlobalRateMultiplier(prev => prev * (1 + upgradeData.rateMultiplierIncrease));
-      toast({ title: "Upgrade Purchased!", description: `${upgradeData.name} is now active.` });
+      toast({ title: "Upgrade Purchased!", description: `${upgradeData.name} is now active.`, variant: "default" });
     } else {
       toast({ title: "Not enough fish!", description: `You need ${upgradeData.cost.toLocaleString('en-US')} fish for this upgrade.`, variant: "destructive" });
     }
@@ -147,8 +148,19 @@ export default function FishWorldTycoonPage() {
   
   const resetGame = () => {
     initializeGameState();
-    toast({ title: "Game Reset", description: "You're starting fresh!"});
+    toast({ title: "Game Reset", description: "You're starting fresh!", variant: "default"});
   };
+
+  const handleMinigameFishCaught = useCallback((count: number) => {
+    setFish(prevFish => prevFish + count);
+    // Optionally, show a less intrusive toast or no toast to avoid spam
+    // For now, let's keep it consistent with other success toasts
+    toast({
+      title: `Caught ${count} fish!`,
+      description: "Quick catch!",
+      variant: 'default', 
+    });
+  }, [toast]);
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 md:p-8 space-y-6 bg-background text-foreground">
@@ -158,6 +170,13 @@ export default function FishWorldTycoonPage() {
         </h1>
         <FishDisplay fishCount={fish} fishPerSecond={totalFishPerSecond} />
       </header>
+
+      {/* Minigame Section */}
+      <section className="w-full flex justify-center mt-4 mb-2">
+         {/* Default gameAreaWidth and gameAreaHeight will be used from ClickableFishGame */}
+        <ClickableFishGame onFishCaught={handleMinigameFishCaught} />
+      </section>
+
 
       <main className="w-full max-w-6xl space-y-8">
         {/* Hire Fishermen Section */}
