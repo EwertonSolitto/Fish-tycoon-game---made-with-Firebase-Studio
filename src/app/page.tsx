@@ -11,7 +11,7 @@ import { HireableFishermanCard } from '@/components/game/HireableFishermanCard';
 import { PurchasableUpgradeCard } from '@/components/game/PurchasableUpgradeCard';
 import { FISHERMAN_TYPES, GLOBAL_UPGRADES_DATA, INITIAL_FISH_COUNT, GAME_TICK_INTERVAL_MS } from '@/config/gameData';
 import { RotateCcw } from 'lucide-react';
-import { ClickableFishGame } from '@/components/game/ClickableFishGame'; // Added import
+import { ClickableFishGame } from '@/components/game/ClickableFishGame';
 
 // State for each type of fisherman owned
 interface FishermanTypeState {
@@ -153,8 +153,6 @@ export default function FishWorldTycoonPage() {
 
   const handleMinigameFishCaught = useCallback((count: number) => {
     setFish(prevFish => prevFish + count);
-    // Optionally, show a less intrusive toast or no toast to avoid spam
-    // For now, let's keep it consistent with other success toasts
     toast({
       title: `Caught ${count} fish!`,
       description: "Quick catch!",
@@ -164,19 +162,22 @@ export default function FishWorldTycoonPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 md:p-8 space-y-6 bg-background text-foreground">
-      <header className="w-full max-w-4xl flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-center sm:text-left" style={{ color: 'hsl(var(--primary-foreground))', WebkitTextStroke: '1px hsl(var(--primary))', textShadow:'2px 2px 4px hsla(var(--primary), 0.5)'}}>
-          Fish World Tycoon
-        </h1>
-        <FishDisplay fishCount={fish} fishPerSecond={totalFishPerSecond} />
-      </header>
+      
+      {/* Top section: Title/Counter on Left, Minigame on Right */}
+      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {/* Left Column: Title and Fish Counter */}
+        <div className="flex flex-col space-y-4 items-center md:items-start">
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-center md:text-left" style={{ color: 'hsl(var(--primary-foreground))', WebkitTextStroke: '1px hsl(var(--primary))', textShadow:'2px 2px 4px hsla(var(--primary), 0.5)'}}>
+            Fish World Tycoon
+          </h1>
+          <FishDisplay fishCount={fish} fishPerSecond={totalFishPerSecond} />
+        </div>
 
-      {/* Minigame Section */}
-      <section className="w-full flex justify-center mt-4 mb-2">
-         {/* Default gameAreaWidth and gameAreaHeight will be used from ClickableFishGame */}
-        <ClickableFishGame onFishCaught={handleMinigameFishCaught} />
-      </section>
-
+        {/* Right Column: Minigame */}
+        <div className="flex justify-center md:justify-end w-full">
+          <ClickableFishGame onFishCaught={handleMinigameFishCaught} />
+        </div>
+      </div>
 
       <main className="w-full max-w-6xl space-y-8">
         {/* Hire Fishermen Section */}
