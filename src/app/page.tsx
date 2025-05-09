@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -28,11 +29,25 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-// State for each type of fisherman owned
+const LOCAL_STORAGE_KEY = 'fishWorldTycoonSaveData_v1';
+
 interface FishermanTypeState {
   quantity: number;
   level: number;
   currentCrewUpgradeCost: number; 
+}
+
+interface SavedGameState {
+  fish: number;
+  ownedFishermanTypes: Record<string, FishermanTypeState>;
+  purchasedUpgrades: Record<string, boolean>;
+  globalRateMultiplier: number;
+  nextFishermanCosts: Record<string, number>;
+  minigameMaxFish: number;
+  minigameFishLifetime: number;
+  minigameFishValue: number;
+  minigameUpgradeLevels: Record<string, number>;
+  nextMinigameUpgradeCosts: Record<string, number>;
 }
 
 export default function FishWorldTycoonPage() {
@@ -42,56 +57,163 @@ export default function FishWorldTycoonPage() {
   const [globalRateMultiplier, setGlobalRateMultiplier] = useState<number>(1);
   const [nextFishermanCosts, setNextFishermanCosts] = useState<Record<string, number>>({});
 
-  // Minigame state
   const [minigameMaxFish, setMinigameMaxFish] = useState<number>(INITIAL_MINIGAME_MAX_FISH);
   const [minigameFishLifetime, setMinigameFishLifetime] = useState<number>(INITIAL_MINIGAME_FISH_LIFETIME_MS);
   const [minigameFishValue, setMinigameFishValue] = useState<number>(INITIAL_MINIGAME_FISH_VALUE);
   const [minigameUpgradeLevels, setMinigameUpgradeLevels] = useState<Record<string, number>>({});
   const [nextMinigameUpgradeCosts, setNextMinigameUpgradeCosts] = useState<Record<string, number>>({});
 
-
   const { toast } = useToast();
 
-  const initializeGameState = useCallback(() => {
-    const initialFishermanCosts: Record<string, number> = {};
-    const initialOwnedFishermanTypes: Record<string, FishermanTypeState> = {};
+  const initializeGameState = useCallback((forceReset = false) => {
+    let loadedState: SavedGameState | null = null;
+    if (typeof window !== 'undefined' && !forceReset) {
+      try {
+        const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (savedData) {
+          loadedState = JSON.parse(savedData) as SavedGameState;
+        }
+      } catch (error) {
+        console.error("Failed to load game state from localStorage:", error);
+        localStorage.removeItem(LOCAL_STORAGE_KEY); 
+      }
+    }
 
-    FISHERMAN_TYPES.forEach(ft => {
-      initialFishermanCosts[ft.id] = ft.initialCost;
-      initialOwnedFishermanTypes[ft.id] = {
-        quantity: 0,
-        level: 1,
-        currentCrewUpgradeCost: ft.baseUpgradeCost,
-      };
-    });
+    if (loadedState) {
+      setFish(loadedState.fish ?? INITIAL_FISH_COUNT);
+      setPurchasedUpgrades(loadedState.purchasedUpgrades ?? {});
+      setGlobalRateMultiplier(loadedState.globalRateMultiplier ?? 1);
+      
+      setMinigameMaxFish(loadedState.minigameMaxFish ?? INITIAL_MINIGAME_MAX_FISH);
+      setMinigameFishLifetime(loadedState.minigameFishLifetime ?? INITIAL_MINIGAME_FISH_LIFETIME_MS);
+      setMinigameFishValue(loadedState.minigameFishValue ?? INITIAL_MINIGAME_FISH_VALUE);
 
-    setNextFishermanCosts(initialFishermanCosts);
-    setOwnedFishermanTypes(initialOwnedFishermanTypes);
-    setFish(INITIAL_FISH_COUNT);
-    setPurchasedUpgrades({});
-    setGlobalRateMultiplier(1);
+      const defaultFishermanCosts: Record<string, number> = {};
+      const defaultOwnedFishermanTypes: Record<string, FishermanTypeState> = {};
+      FISHERMAN_TYPES.forEach(ft => {
+        defaultFishermanCosts[ft.id] = ft.initialCost;
+        defaultOwnedFishermanTypes[ft.id] = {
+          quantity: 0,
+          level: 1,
+          currentCrewUpgradeCost: ft.baseUpgradeCost,
+        };
+      });
 
-    // Reset and initialize minigame state
-    setMinigameMaxFish(INITIAL_MINIGAME_MAX_FISH);
-    setMinigameFishLifetime(INITIAL_MINIGAME_FISH_LIFETIME_MS);
-    setMinigameFishValue(INITIAL_MINIGAME_FISH_VALUE);
+      const finalNextFishermanCosts: Record<string, number> = {};
+      FISHERMAN_TYPES.forEach(ft => {
+        finalNextFishermanCosts[ft.id] = loadedState!.nextFishermanCosts?.[ft.id] ?? defaultFishermanCosts[ft.id];
+      });
+      setNextFishermanCosts(finalNextFishermanCosts);
 
-    const initialMinigameUpgradeLevels: Record<string, number> = {};
-    const initialMinigameUpgradeCosts: Record<string, number> = {};
-    
-    MINIGAME_UPGRADES_DATA.forEach(up => {
-      initialMinigameUpgradeLevels[up.id] = 1; 
-      initialMinigameUpgradeCosts[up.id] = up.initialCost; 
-    });
-    
-    setMinigameUpgradeLevels(initialMinigameUpgradeLevels);
-    setNextMinigameUpgradeCosts(initialMinigameUpgradeCosts);
+      const finalOwnedFishermanTypes: Record<string, FishermanTypeState> = {};
+      FISHERMAN_TYPES.forEach(ft => {
+        finalOwnedFishermanTypes[ft.id] = {
+          ...defaultOwnedFishermanTypes[ft.id],
+          ...(loadedState!.ownedFishermanTypes?.[ft.id] ?? {}),
+        };
+      });
+      setOwnedFishermanTypes(finalOwnedFishermanTypes);
+      
+      const defaultMinigameUpgradeLevels: Record<string, number> = {};
+      const defaultMinigameUpgradeCosts: Record<string, number> = {};
+      MINIGAME_UPGRADES_DATA.forEach(up => {
+        defaultMinigameUpgradeLevels[up.id] = 1;
+        defaultMinigameUpgradeCosts[up.id] = up.initialCost;
+      });
 
+      const finalMinigameUpgradeLevels: Record<string, number> = {};
+      MINIGAME_UPGRADES_DATA.forEach(up => {
+        finalMinigameUpgradeLevels[up.id] = loadedState!.minigameUpgradeLevels?.[up.id] ?? defaultMinigameUpgradeLevels[up.id];
+      });
+      setMinigameUpgradeLevels(finalMinigameUpgradeLevels);
+
+      const finalMinigameUpgradeCosts: Record<string, number> = {};
+      MINIGAME_UPGRADES_DATA.forEach(up => {
+        finalMinigameUpgradeCosts[up.id] = loadedState!.nextMinigameUpgradeCosts?.[up.id] ?? defaultMinigameUpgradeCosts[up.id];
+      });
+      setNextMinigameUpgradeCosts(finalMinigameUpgradeCosts);
+
+    } else {
+      setFish(INITIAL_FISH_COUNT);
+      setGlobalRateMultiplier(1);
+      setPurchasedUpgrades({});
+
+      const initialFishermanCosts: Record<string, number> = {};
+      const initialOwnedFishermanTypes: Record<string, FishermanTypeState> = {};
+      FISHERMAN_TYPES.forEach(ft => {
+        initialFishermanCosts[ft.id] = ft.initialCost;
+        initialOwnedFishermanTypes[ft.id] = {
+          quantity: 0,
+          level: 1,
+          currentCrewUpgradeCost: ft.baseUpgradeCost,
+        };
+      });
+      setNextFishermanCosts(initialFishermanCosts);
+      setOwnedFishermanTypes(initialOwnedFishermanTypes);
+
+      setMinigameMaxFish(INITIAL_MINIGAME_MAX_FISH);
+      setMinigameFishLifetime(INITIAL_MINIGAME_FISH_LIFETIME_MS);
+      setMinigameFishValue(INITIAL_MINIGAME_FISH_VALUE);
+
+      const initialMinigameUpgradeLevels: Record<string, number> = {};
+      const initialMinigameUpgradeCosts: Record<string, number> = {};
+      MINIGAME_UPGRADES_DATA.forEach(up => {
+        initialMinigameUpgradeLevels[up.id] = 1; 
+        initialMinigameUpgradeCosts[up.id] = up.initialCost; 
+      });
+      setMinigameUpgradeLevels(initialMinigameUpgradeLevels);
+      setNextMinigameUpgradeCosts(initialMinigameUpgradeCosts);
+    }
   }, []);
 
   useEffect(() => {
     initializeGameState();
   }, [initializeGameState]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Don't save if state might not be fully initialized yet, e.g. on first hydration
+      // Check if essential parts of state are populated.
+      if (Object.keys(ownedFishermanTypes).length === 0 && fish === INITIAL_FISH_COUNT && Object.keys(nextFishermanCosts).length === 0) {
+         // Potentially initial state before hydration or proper initialization, skip save.
+         // This check can be refined based on how initial state is structured.
+         // A more robust way is to ensure initializeGameState has fully run.
+         // For now, this basic check might prevent saving an "empty" state too early.
+         // However, if initializeGameState correctly sets to defaults, saving defaults is fine.
+         // The main concern is saving BEFORE initializeGameState loads from localStorage.
+         // The current structure (initializeGameState in mount effect) should handle this.
+      }
+
+      const gameStateToSave: SavedGameState = {
+        fish,
+        ownedFishermanTypes,
+        purchasedUpgrades,
+        globalRateMultiplier,
+        nextFishermanCosts,
+        minigameMaxFish,
+        minigameFishLifetime,
+        minigameFishValue,
+        minigameUpgradeLevels,
+        nextMinigameUpgradeCosts,
+      };
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(gameStateToSave));
+      } catch (error) {
+        console.error("Failed to save game state to localStorage:", error);
+      }
+    }
+  }, [
+    fish, 
+    ownedFishermanTypes, 
+    purchasedUpgrades, 
+    globalRateMultiplier, 
+    nextFishermanCosts,
+    minigameMaxFish,
+    minigameFishLifetime,
+    minigameFishValue,
+    minigameUpgradeLevels,
+    nextMinigameUpgradeCosts
+  ]);
 
   const totalFishPerSecond = useMemo(() => {
     let total = 0;
@@ -230,7 +352,14 @@ export default function FishWorldTycoonPage() {
   };
   
   const resetGame = () => {
-    initializeGameState();
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      } catch (error) {
+        console.error("Failed to clear game state from localStorage during reset:", error);
+      }
+    }
+    initializeGameState(true); // forceReset to ensure defaults are set
     toast({ title: "Game Reset", description: "You're starting fresh!", variant: "default"});
   };
 
@@ -341,11 +470,6 @@ export default function FishWorldTycoonPage() {
           </AccordionItem>
         </Accordion>
         
-        {/* This Separator is now between the Accordion block and the footer.
-            It was previously between "Catching Fish Upgrades" and the footer.
-            If AccordionItem's bottom border is sufficient, this could be removed,
-            but it offers a slightly larger visual separation. Let's keep it for now.
-        */}
         <Separator className="my-6" /> 
         
         <footer className="w-full flex justify-center py-6">
@@ -358,6 +482,3 @@ export default function FishWorldTycoonPage() {
     </div>
   );
 }
-
-
-    
