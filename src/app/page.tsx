@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { FishDisplay } from '@/components/game/FishDisplay';
 import { HireableFishermanCard } from '@/components/game/HireableFishermanCard';
-import { OwnedFishermanTypeCard } from '@/components/game/OwnedFishermanTypeCard'; // New component
+import { OwnedFishermanTypeCard } from '@/components/game/OwnedFishermanTypeCard';
 import { PurchasableUpgradeCard } from '@/components/game/PurchasableUpgradeCard';
 import { FISHERMAN_TYPES, GLOBAL_UPGRADES_DATA, INITIAL_FISH_COUNT, GAME_TICK_INTERVAL_MS } from '@/config/gameData';
 import { RotateCcw } from 'lucide-react';
@@ -17,7 +17,7 @@ import { RotateCcw } from 'lucide-react';
 interface FishermanTypeState {
   quantity: number;
   level: number;
-  currentUnitUpgradeCost: number; // Cost to upgrade ONE fisherman of this type to the next level
+  currentUnitUpgradeCost: number; // Cost to upgrade ALL fishermen of this type to the next level
 }
 
 export default function FishWorldTycoonPage() {
@@ -60,6 +60,9 @@ export default function FishWorldTycoonPage() {
       if (typeState.quantity > 0) {
         const fishermanType = FISHERMAN_TYPES.find(ft => ft.id === typeId);
         if (fishermanType) {
+          // Rate per unit is baseRate * level multiplier * global multiplier
+          // Level multiplier could be as simple as 'level', or Math.pow(someFactor, level -1), etc.
+          // For now, let's use: baseRate * level (so level 2 is 2x baseRate, level 3 is 3x baseRate etc.)
           const ratePerUnit = fishermanType.baseRate * typeState.level * globalRateMultiplier;
           total += ratePerUnit * typeState.quantity;
         }
@@ -112,10 +115,10 @@ export default function FishWorldTycoonPage() {
 
     if (!fishermanType || !currentTypeState || currentTypeState.quantity === 0) return;
 
-    const totalUpgradeCost = currentTypeState.currentUnitUpgradeCost * currentTypeState.quantity;
+    const crewUpgradeCost = currentTypeState.currentUnitUpgradeCost;
 
-    if (fish >= totalUpgradeCost) {
-      setFish(prevFish => prevFish - totalUpgradeCost);
+    if (fish >= crewUpgradeCost) {
+      setFish(prevFish => prevFish - crewUpgradeCost);
       
       setOwnedFishermanTypes(prevTypes => ({
         ...prevTypes,
@@ -128,7 +131,7 @@ export default function FishWorldTycoonPage() {
 
       toast({ title: `${fishermanType.name} Crew Upgraded!`, description: `Your ${fishermanType.name} crew is now level ${currentTypeState.level + 1}.` });
     } else {
-      toast({ title: "Not enough fish!", description: `You need ${Math.ceil(totalUpgradeCost).toLocaleString('en-US')} fish to upgrade your ${fishermanType.name} crew.`, variant: "destructive" });
+      toast({ title: "Not enough fish!", description: `You need ${Math.ceil(crewUpgradeCost).toLocaleString('en-US')} fish to upgrade your ${fishermanType.name} crew.`, variant: "destructive" });
     }
   };
 
@@ -194,8 +197,7 @@ export default function FishWorldTycoonPage() {
                 const typeData = FISHERMAN_TYPES.find(ft => ft.id === typeId);
                 if (!typeData) return null;
 
-                const totalUpgradeCostForType = typeState.currentUnitUpgradeCost * typeState.quantity;
-                const canAffordThisTypeUpgrade = fish >= totalUpgradeCostForType;
+                const canAffordThisTypeUpgrade = fish >= typeState.currentUnitUpgradeCost;
                 const ratePerUnit = typeData.baseRate * typeState.level * globalRateMultiplier;
                 const totalRateForType = ratePerUnit * typeState.quantity;
 
@@ -205,7 +207,6 @@ export default function FishWorldTycoonPage() {
                     fishermanTypeData={typeData}
                     typeState={typeState}
                     currentRateForType={totalRateForType}
-                    totalUpgradeCost={totalUpgradeCostForType}
                     onUpgrade={handleUpgradeFishermanType}
                     canAffordUpgrade={canAffordThisTypeUpgrade}
                   />
@@ -246,4 +247,3 @@ export default function FishWorldTycoonPage() {
     </div>
   );
 }
-

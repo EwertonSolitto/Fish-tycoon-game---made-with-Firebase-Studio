@@ -5,7 +5,7 @@ import type React from 'react';
 import type { FishermanType } from '@/config/gameData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, ArrowUpCircle, Activity, Users } from 'lucide-react';
+import { DollarSign, ArrowUpCircle, Activity } from 'lucide-react';
 
 interface OwnedFishermanTypeCardProps {
   fishermanTypeData: FishermanType;
@@ -15,7 +15,6 @@ interface OwnedFishermanTypeCardProps {
     currentUnitUpgradeCost: number; 
   };
   currentRateForType: number;
-  totalUpgradeCost: number;
   onUpgrade: (typeId: string) => void;
   canAffordUpgrade: boolean;
 }
@@ -24,7 +23,6 @@ export function OwnedFishermanTypeCard({
   fishermanTypeData, 
   typeState, 
   currentRateForType,
-  totalUpgradeCost,
   onUpgrade, 
   canAffordUpgrade 
 }: OwnedFishermanTypeCardProps) {
@@ -46,10 +44,7 @@ export function OwnedFishermanTypeCard({
           <Activity className="h-4 w-4 mr-1 text-muted-foreground" /> Total Rate: {currentRateForType.toFixed(2)} fish/sec
         </p>
         <p className="text-sm font-medium flex items-center">
-          <Users className="h-4 w-4 mr-1 text-muted-foreground" /> Unit Upgrade Cost: {Math.ceil(typeState.currentUnitUpgradeCost).toLocaleString('en-US')} fish
-        </p>
-        <p className="text-sm font-medium flex items-center">
-          <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Total Upgrade Cost: {Math.ceil(totalUpgradeCost).toLocaleString('en-US')} fish
+          <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Crew Upgrade Cost: {Math.ceil(typeState.currentUnitUpgradeCost).toLocaleString('en-US')} fish
         </p>
       </CardContent>
       <CardFooter>
@@ -58,7 +53,7 @@ export function OwnedFishermanTypeCard({
           disabled={!canAffordUpgrade || typeState.quantity === 0}
           variant="secondary"
           className="w-full"
-          aria-label={`Upgrade ${fishermanTypeData.name} crew`}
+          aria-label={`Upgrade ${fishermanTypeData.name} crew to level ${typeState.level + 1}`}
         >
           <ArrowUpCircle className="mr-2 h-4 w-4" /> Upgrade Crew (Lvl {typeState.level + 1})
         </Button>
@@ -66,4 +61,3 @@ export function OwnedFishermanTypeCard({
     </Card>
   );
 }
-

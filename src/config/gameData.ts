@@ -1,5 +1,6 @@
+
 import type React from 'react';
-import { Users, Ship, TrendingUp, Zap, PackagePlusIcon, Briefcase, Settings2 } from 'lucide-react';
+import { Users, Ship, Briefcase, Settings2, Zap, PackagePlusIcon } from 'lucide-react';
 
 // Using React.ElementType for Lucide icons
 export interface FishermanType {
@@ -10,7 +11,7 @@ export interface FishermanType {
   initialCost: number;
   costIncreaseFactor: number;
   baseRate: number; // fish per second at level 1
-  baseUpgradeCost: number; // cost to upgrade from L1 to L2
+  baseUpgradeCost: number; // cost to upgrade the entire crew of this type from L1 to L2
   upgradeCostIncreaseFactor: number;
 }
 
@@ -23,8 +24,8 @@ export const FISHERMAN_TYPES: FishermanType[] = [
     initialCost: 20,
     costIncreaseFactor: 1.15,
     baseRate: 1,
-    baseUpgradeCost: 25,
-    upgradeCostIncreaseFactor: 1.3,
+    baseUpgradeCost: 50, // Cost to upgrade entire Novice Fisher crew from L1 to L2
+    upgradeCostIncreaseFactor: 1.35,
   },
   {
     id: 'seasoned_captain',
@@ -33,9 +34,9 @@ export const FISHERMAN_TYPES: FishermanType[] = [
     icon: Ship,
     initialCost: 200,
     costIncreaseFactor: 1.2,
-    baseRate: 1,
-    baseUpgradeCost: 250,
-    upgradeCostIncreaseFactor: 1.4,
+    baseRate: 5, // Increased base rate
+    baseUpgradeCost: 300, // Cost to upgrade entire Seasoned Captain crew from L1 to L2
+    upgradeCostIncreaseFactor: 1.45,
   },
   {
     id: 'master_angler',
@@ -44,9 +45,9 @@ export const FISHERMAN_TYPES: FishermanType[] = [
     icon: Briefcase, 
     initialCost: 1000,
     costIncreaseFactor: 1.25,
-    baseRate: 5,
-    baseUpgradeCost: 1200,
-    upgradeCostIncreaseFactor: 1.5,
+    baseRate: 25, // Increased base rate
+    baseUpgradeCost: 1500, // Cost to upgrade entire Master Angler crew from L1 to L2
+    upgradeCostIncreaseFactor: 1.55,
   },
 ];
 
