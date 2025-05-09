@@ -23,7 +23,6 @@ interface ClickableFishGameProps {
   maxSpawnIntervalMs?: number;
 }
 
-const DEFAULT_GAME_AREA_WIDTH = 400;
 const DEFAULT_GAME_AREA_HEIGHT = 200;
 const DEFAULT_MAX_FISH_ON_SCREEN = 5;
 const DEFAULT_FISH_LIFETIME_MS = 3000; // 3 seconds
@@ -34,7 +33,7 @@ const MAX_FISH_SIZE = 40; // pixels
 
 export function ClickableFishGame({
   onFishCaught,
-  gameAreaWidth = DEFAULT_GAME_AREA_WIDTH,
+  gameAreaWidth = 0, // Default to 0 to enable responsive width via '100%'
   gameAreaHeight = DEFAULT_GAME_AREA_HEIGHT,
   maxFishOnScreen = DEFAULT_MAX_FISH_ON_SCREEN,
   fishLifetimeMs = DEFAULT_FISH_LIFETIME_MS,
@@ -43,7 +42,7 @@ export function ClickableFishGame({
 }: ClickableFishGameProps) {
   const [activeFish, setActiveFish] = useState<ActiveFish[]>([]);
   const gameAreaRef = useRef<HTMLDivElement>(null);
-  const spawnTimeoutIdRef = useRef<NodeJS.Timeout | null>(null); // Changed from Interval to Timeout for recursive scheduling
+  const spawnTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
   const despawnIntervalIdRef = useRef<NodeJS.Timeout | null>(null);
 
   const spawnFish = useCallback(() => {
@@ -51,15 +50,13 @@ export function ClickableFishGame({
       return;
     }
 
-    const id = Math.random().toString(36).substring(2, 9); // Unique enough ID
-    // Spawn within 5-95% range to avoid edges and ensure full visibility
+    const id = Math.random().toString(36).substring(2, 9);
     const x = Math.random() * 90 + 5; 
     const y = Math.random() * 90 + 5;
     const size = Math.floor(Math.random() * (MAX_FISH_SIZE - MIN_FISH_SIZE + 1) + MIN_FISH_SIZE);
     const newFish: ActiveFish = { id, x, y, createdAt: Date.now(), size };
     
     setActiveFish((prev) => {
-      // Ensure not exceeding maxFishOnScreen even with rapid calls (though current logic prevents this)
       if (prev.length < maxFishOnScreen) {
         return [...prev, newFish];
       }
@@ -75,24 +72,22 @@ export function ClickableFishGame({
     const nextSpawnTime = Math.random() * (maxSpawnIntervalMs - minSpawnIntervalMs) + minSpawnIntervalMs;
     spawnTimeoutIdRef.current = setTimeout(() => {
       spawnFish();
-      scheduleNextSpawn(); // Recursively schedule the next spawn
+      scheduleNextSpawn();
     }, nextSpawnTime);
   }, [spawnFish, minSpawnIntervalMs, maxSpawnIntervalMs]);
 
-  // Effect for spawning fish
   useEffect(() => {
-    scheduleNextSpawn(); // Initial call to start the spawning loop
+    scheduleNextSpawn();
     return () => {
       if (spawnTimeoutIdRef.current) clearTimeout(spawnTimeoutIdRef.current);
     };
   }, [scheduleNextSpawn]);
 
-  // Effect for despawning fish
   useEffect(() => {
     despawnIntervalIdRef.current = setInterval(() => {
       const now = Date.now();
       setActiveFish((prev) => prev.filter((fish) => now - fish.createdAt < fishLifetimeMs));
-    }, 500); // Check for despawns frequently
+    }, 500);
 
     return () => {
       if (despawnIntervalIdRef.current) clearInterval(despawnIntervalIdRef.current);
@@ -101,7 +96,7 @@ export function ClickableFishGame({
 
   const handleFishClick = useCallback(
     (fishId: string) => {
-      onFishCaught(1); // Catch 1 fish per click
+      onFishCaught(1);
       setActiveFish((prev) => prev.filter((fish) => fish.id !== fishId));
     },
     [onFishCaught]
@@ -119,9 +114,9 @@ export function ClickableFishGame({
           ref={gameAreaRef}
           className="relative border-2 border-primary rounded-md overflow-hidden bg-background/30"
           style={{ 
-            width: gameAreaWidth > 0 ? `${gameAreaWidth}px` : '100%', // Allow 100% width if 0 is passed
+            width: gameAreaWidth > 0 ? `${gameAreaWidth}px` : '100%',
             height: `${gameAreaHeight}px`, 
-            minWidth: '200px' // Ensure a minimum width
+            minWidth: '200px'
           }}
           aria-live="polite" 
           role="application" 
@@ -140,7 +135,7 @@ export function ClickableFishGame({
           {activeFish.length === 0 && (
              <p 
                 className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm p-4 text-center"
-                aria-hidden="true" // Hide from screen readers as main aria-label covers it
+                aria-hidden="true"
              >
                 Look out for fish! Click them to catch.
              </p>
