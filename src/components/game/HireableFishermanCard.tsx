@@ -27,7 +27,7 @@ export function HireableFishermanCard({ fishermanType, onHire, currentCost, canA
       </CardHeader>
       <CardContent className="space-y-1 pt-2 pb-4">
         <p className="text-sm font-medium flex items-center">
-          <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Cost: {Math.ceil(currentCost).toLocaleString()} fish
+          <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Cost: {Math.ceil(currentCost).toLocaleString('en-US')} fish
         </p>
         <p className="text-sm text-muted-foreground">Base Rate: {fishermanType.baseRate.toFixed(1)} fish/sec (Lvl 1)</p>
       </CardContent>

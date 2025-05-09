@@ -28,7 +28,7 @@ export function PurchasableUpgradeCard({ upgrade, onPurchase, isPurchased, canAf
       <CardContent className="pt-2 pb-4">
         {!isPurchased && (
           <p className="text-sm font-medium flex items-center">
-            <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Cost: {upgrade.cost.toLocaleString()} fish
+            <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Cost: {upgrade.cost.toLocaleString('en-US')} fish
           </p>
         )}
       </CardContent>

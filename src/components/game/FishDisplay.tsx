@@ -20,7 +20,7 @@ export function FishDisplay({ fishCount, fishPerSecond }: FishDisplayProps) {
       <CardContent className="flex flex-col items-center space-y-2">
         <div className="flex items-center text-5xl font-extrabold text-primary">
           <FishIcon className="mr-3 h-12 w-12" aria-hidden="true" />
-          {Math.floor(fishCount).toLocaleString()}
+          {Math.floor(fishCount).toLocaleString('en-US')}
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <TrendingUp className="mr-1 h-4 w-4" />

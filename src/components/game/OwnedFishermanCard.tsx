@@ -37,7 +37,7 @@ export function OwnedFishermanCard({ fisherman, fishermanTypeData, onUpgrade, ca
           <Activity className="h-4 w-4 mr-1 text-muted-foreground" /> Rate: {fisherman.currentRate.toFixed(2)} fish/sec
         </p>
         <p className="text-sm font-medium flex items-center">
-          <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Upgrade Cost: {Math.ceil(fisherman.currentUpgradeCost).toLocaleString()} fish
+          <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Upgrade Cost: {Math.ceil(fisherman.currentUpgradeCost).toLocaleString('en-US')} fish
         </p>
       </CardContent>
       <CardFooter>

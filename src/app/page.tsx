@@ -102,7 +102,7 @@ export default function FishWorldTycoonPage() {
 
       toast({ title: "Fisherman Hired!", description: `You hired a ${fishermanType.name}.` });
     } else {
-      toast({ title: "Not enough fish!", description: `You need ${Math.ceil(cost).toLocaleString()} fish to hire.`, variant: "destructive" });
+      toast({ title: "Not enough fish!", description: `You need ${Math.ceil(cost).toLocaleString('en-US')} fish to hire.`, variant: "destructive" });
     }
   };
 
@@ -122,7 +122,7 @@ export default function FishWorldTycoonPage() {
             currentUpgradeCost: upgradeCost * fishermanType.upgradeCostIncreaseFactor,
           };
         } else {
-          toast({ title: "Not enough fish!", description: `You need ${Math.ceil(upgradeCost).toLocaleString()} fish to upgrade.`, variant: "destructive" });
+          toast({ title: "Not enough fish!", description: `You need ${Math.ceil(upgradeCost).toLocaleString('en-US')} fish to upgrade.`, variant: "destructive" });
           return f;
         }
       }
@@ -140,7 +140,7 @@ export default function FishWorldTycoonPage() {
       setGlobalRateMultiplier(prev => prev * (1 + upgradeData.rateMultiplierIncrease));
       toast({ title: "Upgrade Purchased!", description: `${upgradeData.name} is now active.` });
     } else {
-      toast({ title: "Not enough fish!", description: `You need ${upgradeData.cost.toLocaleString()} fish for this upgrade.`, variant: "destructive" });
+      toast({ title: "Not enough fish!", description: `You need ${upgradeData.cost.toLocaleString('en-US')} fish for this upgrade.`, variant: "destructive" });
     }
   };
   
