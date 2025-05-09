@@ -5,7 +5,7 @@ import type React from 'react';
 import type { FishermanType } from '@/config/gameData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, UserPlus, ArrowUpCircle, Activity, TrendingUp, Users2Icon } from 'lucide-react'; // Users2Icon might be better than Users for quantity. Or just text. Using Users2Icon for now.
+import { DollarSign, UserPlus, ArrowUpCircle, Activity, TrendingUp, Users2Icon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 interface HireableFishermanCardProps {
@@ -59,22 +59,20 @@ export function HireableFishermanCard({
             </p>
           </div>
 
-          {ownedQuantity > 0 && (
-            <>
-              <Separator />
-              <div>
-                <p className="text-sm font-semibold flex items-center">
-                  <Users2Icon className="h-4 w-4 mr-1 text-muted-foreground" /> Owned: {ownedQuantity} (Level {currentLevel})
-                </p>
-                <p className="text-sm font-medium flex items-center">
-                  <Activity className="h-4 w-4 mr-1 text-muted-foreground" /> Crew Rate: {totalRateForType.toFixed(2)} fish/sec
-                </p>
-                <p className="text-sm font-medium flex items-center">
-                  <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Upgrade Cost: {Math.ceil(currentCrewUpgradeCost).toLocaleString('en-US')} fish
-                </p>
-              </div>
-            </>
-          )}
+          <>
+            <Separator />
+            <div>
+              <p className="text-sm font-semibold flex items-center">
+                <Users2Icon className="h-4 w-4 mr-1 text-muted-foreground" /> Owned: {ownedQuantity} (Level {currentLevel})
+              </p>
+              <p className="text-sm font-medium flex items-center">
+                <Activity className="h-4 w-4 mr-1 text-muted-foreground" /> Crew Rate: {totalRateForType.toFixed(2)} fish/sec
+              </p>
+              <p className="text-sm font-medium flex items-center">
+                <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Upgrade Cost: {Math.ceil(currentCrewUpgradeCost).toLocaleString('en-US')} fish
+              </p>
+            </div>
+          </>
         </CardContent>
       </div>
       
@@ -87,17 +85,15 @@ export function HireableFishermanCard({
         >
           <UserPlus className="mr-2 h-4 w-4" /> Hire
         </Button>
-        {ownedQuantity > 0 && (
-          <Button 
-            onClick={() => onUpgrade(fishermanType.id)} 
-            disabled={!canAffordCrewUpgrade}
-            variant="secondary"
-            className="w-full"
-            aria-label={`Upgrade ${fishermanType.name} crew to level ${currentLevel + 1}`}
-          >
-            <ArrowUpCircle className="mr-2 h-4 w-4" /> Upgrade Crew (Lvl {currentLevel + 1})
-          </Button>
-        )}
+        <Button 
+          onClick={() => onUpgrade(fishermanType.id)} 
+          disabled={!canAffordCrewUpgrade} // This will be false if ownedQuantity is 0 or if fish < cost
+          variant="secondary"
+          className="w-full"
+          aria-label={`Upgrade ${fishermanType.name} crew to level ${currentLevel + 1}`}
+        >
+          <ArrowUpCircle className="mr-2 h-4 w-4" /> Upgrade Crew (Lvl {currentLevel + 1})
+        </Button>
       </CardFooter>
     </Card>
   );
