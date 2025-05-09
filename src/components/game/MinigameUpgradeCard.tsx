@@ -3,6 +3,11 @@
 
 import type React from 'react';
 import type { MinigameUpgradeData } from '@/config/gameData';
+import { 
+  INITIAL_MINIGAME_MAX_FISH,
+  INITIAL_MINIGAME_FISH_LIFETIME_MS,
+  INITIAL_MINIGAME_FISH_VALUE
+} from '@/config/gameData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, Zap, CheckCircle2, TrendingUp, ShieldCheck, Info } from 'lucide-react';
@@ -25,24 +30,41 @@ export function MinigameUpgradeCard({
   isMaxLevel
 }: MinigameUpgradeCardProps) {
   const IconComponent = upgrade.icon;
+  
+  let baseStatValueForDisplay: number;
+  switch (upgrade.effect.type) {
+    case 'maxFish':
+      baseStatValueForDisplay = INITIAL_MINIGAME_MAX_FISH;
+      break;
+    case 'lifetime':
+      baseStatValueForDisplay = INITIAL_MINIGAME_FISH_LIFETIME_MS;
+      break;
+    case 'value':
+      baseStatValueForDisplay = INITIAL_MINIGAME_FISH_VALUE;
+      break;
+    default:
+      // This case should ideally not be reached if upgrade data is correct
+      baseStatValueForDisplay = 0; 
+  }
 
-  const actualCurrentLevel = currentLevel === 0 ? 1 : currentLevel; // Ensure level is at least 1 for display
-  const currentBonusValue = actualCurrentLevel * upgrade.effect.value;
+  // Calculate the total displayed value for this stat: InitialDisplayValue + (currentLevel - 1) * upgrade.effect.value
+  // This makes Level 1 display the InitialDisplayValue, and subsequent levels add the effect.
+  const displayedTotalValue = baseStatValueForDisplay + (currentLevel - 1) * upgrade.effect.value;
   
   let currentBonusDescription = "";
   let nextLevelEffectDescription = "";
 
   switch (upgrade.effect.type) {
     case 'maxFish':
-      currentBonusDescription = `+${currentBonusValue} Max Fish`;
+      currentBonusDescription = `${displayedTotalValue} Max Fish`;
       nextLevelEffectDescription = `Adds +${upgrade.effect.value} Max Fish`;
       break;
     case 'lifetime':
-      currentBonusDescription = `+${(currentBonusValue / 1000).toFixed(1)}s Fish Lifetime`;
+      currentBonusDescription = `${(displayedTotalValue / 1000).toFixed(1)}s Fish Lifetime`;
       nextLevelEffectDescription = `Adds +${(upgrade.effect.value / 1000).toFixed(1)}s Fish Lifetime`;
       break;
     case 'value':
-      currentBonusDescription = `+${currentBonusValue} Fish Value`;
+      currentBonusDescription = `${displayedTotalValue} Fish Value`;
       nextLevelEffectDescription = `Adds +${upgrade.effect.value} Fish Value`;
       break;
   }
@@ -59,7 +81,7 @@ export function MinigameUpgradeCard({
         </CardHeader>
         <CardContent className="space-y-2 pt-2 pb-4">
           <p className="text-sm font-medium flex items-center">
-            <TrendingUp className="h-4 w-4 mr-1 text-muted-foreground" /> Current Level: {actualCurrentLevel}
+            <TrendingUp className="h-4 w-4 mr-1 text-muted-foreground" /> Current Level: {currentLevel}
           </p>
           <p className="text-sm text-muted-foreground flex items-center">
              <Info className="h-4 w-4 mr-1 text-muted-foreground" /> Current Bonus: {currentBonusDescription}
@@ -91,9 +113,9 @@ export function MinigameUpgradeCard({
             onClick={() => onPurchase(upgrade.id)} 
             disabled={!canAfford}
             className="w-full"
-            aria-label={`Upgrade ${upgrade.name} to level ${actualCurrentLevel + 1}`}
+            aria-label={`Upgrade ${upgrade.name} to level ${currentLevel + 1}`}
           >
-            <Zap className="mr-2 h-4 w-4" /> Upgrade (Lvl {actualCurrentLevel + 1})
+            <Zap className="mr-2 h-4 w-4" /> Upgrade (Lvl {currentLevel + 1})
           </Button>
         )}
       </CardFooter>
