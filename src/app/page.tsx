@@ -41,25 +41,27 @@ export default function FishWorldTycoonPage() {
   const [minigameMaxFish, setMinigameMaxFish] = useState<number>(INITIAL_MINIGAME_MAX_FISH);
   const [minigameFishLifetime, setMinigameFishLifetime] = useState<number>(INITIAL_MINIGAME_FISH_LIFETIME_MS);
   const [minigameFishValue, setMinigameFishValue] = useState<number>(INITIAL_MINIGAME_FISH_VALUE);
-  const [purchasedMinigameUpgrades, setPurchasedMinigameUpgrades] = useState<Record<string, boolean>>({});
+  const [minigameUpgradeLevels, setMinigameUpgradeLevels] = useState<Record<string, number>>({});
+  const [nextMinigameUpgradeCosts, setNextMinigameUpgradeCosts] = useState<Record<string, number>>({});
+
 
   const { toast } = useToast();
 
   const initializeGameState = useCallback(() => {
-    const initialCosts: Record<string, number> = {};
-    const initialOwnedTypes: Record<string, FishermanTypeState> = {};
+    const initialFishermanCosts: Record<string, number> = {};
+    const initialOwnedFishermanTypes: Record<string, FishermanTypeState> = {};
 
     FISHERMAN_TYPES.forEach(ft => {
-      initialCosts[ft.id] = ft.initialCost;
-      initialOwnedTypes[ft.id] = {
+      initialFishermanCosts[ft.id] = ft.initialCost;
+      initialOwnedFishermanTypes[ft.id] = {
         quantity: 0,
         level: 1,
         currentCrewUpgradeCost: ft.baseUpgradeCost,
       };
     });
 
-    setNextFishermanCosts(initialCosts);
-    setOwnedFishermanTypes(initialOwnedTypes);
+    setNextFishermanCosts(initialFishermanCosts);
+    setOwnedFishermanTypes(initialOwnedFishermanTypes);
     setFish(INITIAL_FISH_COUNT);
     setPurchasedUpgrades({});
     setGlobalRateMultiplier(1);
@@ -68,7 +70,16 @@ export default function FishWorldTycoonPage() {
     setMinigameMaxFish(INITIAL_MINIGAME_MAX_FISH);
     setMinigameFishLifetime(INITIAL_MINIGAME_FISH_LIFETIME_MS);
     setMinigameFishValue(INITIAL_MINIGAME_FISH_VALUE);
-    setPurchasedMinigameUpgrades({});
+    
+    const initialMinigameUpgradeLevels: Record<string, number> = {};
+    const initialMinigameUpgradeCosts: Record<string, number> = {};
+    MINIGAME_UPGRADES_DATA.forEach(up => {
+      initialMinigameUpgradeLevels[up.id] = 0;
+      initialMinigameUpgradeCosts[up.id] = up.initialCost;
+    });
+    setMinigameUpgradeLevels(initialMinigameUpgradeLevels);
+    setNextMinigameUpgradeCosts(initialMinigameUpgradeCosts);
+
   }, []);
 
   useEffect(() => {
@@ -168,13 +179,31 @@ export default function FishWorldTycoonPage() {
     }
   };
 
-  const handlePurchaseMinigameUpgrade = (upgradeId: string) => {
+ const handlePurchaseMinigameUpgrade = (upgradeId: string) => {
     const upgradeData = MINIGAME_UPGRADES_DATA.find(up => up.id === upgradeId);
-    if (!upgradeData || purchasedMinigameUpgrades[upgradeId]) return;
+    if (!upgradeData) return;
 
-    if (fish >= upgradeData.cost) {
-      setFish(prevFish => prevFish - upgradeData.cost);
-      setPurchasedMinigameUpgrades(prev => ({ ...prev, [upgradeId]: true }));
+    const currentLevel = minigameUpgradeLevels[upgradeId] || 0;
+    if (upgradeData.maxLevel && currentLevel >= upgradeData.maxLevel) {
+      toast({ title: "Max Level Reached", description: `${upgradeData.name} is already at its maximum level.`, variant: "default" });
+      return;
+    }
+
+    const cost = nextMinigameUpgradeCosts[upgradeId] || upgradeData.initialCost;
+
+    if (fish >= cost) {
+      setFish(prevFish => prevFish - cost);
+      
+      const newLevel = currentLevel + 1;
+      setMinigameUpgradeLevels(prevLevels => ({
+        ...prevLevels,
+        [upgradeId]: newLevel,
+      }));
+
+      setNextMinigameUpgradeCosts(prevCosts => ({
+        ...prevCosts,
+        [upgradeId]: Math.ceil(cost * upgradeData.costIncreaseFactor),
+      }));
 
       switch (upgradeData.effect.type) {
         case 'maxFish':
@@ -187,9 +216,9 @@ export default function FishWorldTycoonPage() {
           setMinigameFishValue(prev => prev + upgradeData.effect.value);
           break;
       }
-      toast({ title: "Minigame Upgrade Purchased!", description: `${upgradeData.name} is now active.`, variant: "default" });
+      toast({ title: "Minigame Upgrade Purchased!", description: `${upgradeData.name} upgraded to Level ${newLevel}.`, variant: "default" });
     } else {
-      toast({ title: "Not enough fish!", description: `You need ${upgradeData.cost.toLocaleString('en-US')} fish for this upgrade.`, variant: "destructive" });
+      toast({ title: "Not enough fish!", description: `You need ${cost.toLocaleString('en-US')} fish for this upgrade.`, variant: "destructive" });
     }
   };
   
@@ -274,15 +303,24 @@ export default function FishWorldTycoonPage() {
         <section>
           <h2 className="text-2xl font-semibold mb-4 text-center sm:text-left">Catching Fish Upgrades</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {MINIGAME_UPGRADES_DATA.map(upgrade => (
-              <MinigameUpgradeCard
-                key={upgrade.id}
-                upgrade={upgrade}
-                onPurchase={handlePurchaseMinigameUpgrade}
-                isPurchased={!!purchasedMinigameUpgrades[upgrade.id]}
-                canAfford={fish >= upgrade.cost}
-              />
-            ))}
+            {MINIGAME_UPGRADES_DATA.map(upgrade => {
+              const currentLevel = minigameUpgradeLevels[upgrade.id] || 0;
+              const nextCost = nextMinigameUpgradeCosts[upgrade.id] || upgrade.initialCost;
+              const canAfford = fish >= nextCost;
+              const isMaxLevel = upgrade.maxLevel ? currentLevel >= upgrade.maxLevel : false;
+
+              return (
+                <MinigameUpgradeCard
+                  key={upgrade.id}
+                  upgrade={upgrade}
+                  onPurchase={handlePurchaseMinigameUpgrade}
+                  currentLevel={currentLevel}
+                  nextCost={nextCost}
+                  canAfford={canAfford && !isMaxLevel}
+                  isMaxLevel={isMaxLevel}
+                />
+              );
+            })}
           </div>
         </section>
         

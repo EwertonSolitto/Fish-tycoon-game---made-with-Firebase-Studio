@@ -1,6 +1,6 @@
 
 import type React from 'react';
-import { Users, Ship, Briefcase, Settings2, Zap, PackagePlusIcon, UsersRound, Timer, CircleDollarSign } from 'lucide-react';
+import { Users, Ship, Briefcase, Settings2, Zap, PackagePlusIcon, UsersRound, Timer, CircleDollarSign, TrendingUp, MousePointerClick } from 'lucide-react';
 
 // Using React.ElementType for Lucide icons
 export interface FishermanType {
@@ -89,41 +89,46 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
 
 export interface MinigameUpgradeEffect {
   type: 'maxFish' | 'lifetime' | 'value';
-  value: number;
+  value: number; // The amount to increase the stat by per level
 }
 export interface MinigameUpgradeData {
   id: string;
   name: string;
   description: string;
   icon: React.ElementType;
-  cost: number;
+  initialCost: number;
+  costIncreaseFactor: number;
   effect: MinigameUpgradeEffect;
+  maxLevel?: number; // Optional: if there's a cap to the upgrade
 }
 
 export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
   {
-    id: 'increase_max_fish_1',
+    id: 'increase_max_fish',
     name: 'More Crowded Waters',
-    description: 'Allows up to 2 more fish to appear in the minigame.',
+    description: 'Increases the max number of fish that can appear in the minigame.',
     icon: UsersRound,
-    cost: 300,
-    effect: { type: 'maxFish', value: 2 },
+    initialCost: 300,
+    costIncreaseFactor: 1.5,
+    effect: { type: 'maxFish', value: 1 }, // Increases max fish by 1 per level
   },
   {
-    id: 'increase_lifetime_1',
+    id: 'increase_lifetime',
     name: 'Patient Fish',
-    description: 'Minigame fish stay on screen for 2 seconds longer.',
+    description: 'Increases how long fish stay on screen in the minigame.',
     icon: Timer,
-    cost: 250,
-    effect: { type: 'lifetime', value: 2000 }, // 2000ms = 2 seconds
+    initialCost: 250,
+    costIncreaseFactor: 1.4,
+    effect: { type: 'lifetime', value: 500 }, // Increases lifetime by 500ms per level
   },
   {
-    id: 'increase_value_1',
+    id: 'increase_value',
     name: 'Lucky Catch',
-    description: 'Each fish caught in the minigame is now worth +1 more fish.',
+    description: 'Increases the number of fish awarded per click in the minigame.',
     icon: CircleDollarSign,
-    cost: 400,
-    effect: { type: 'value', value: 1 },
+    initialCost: 400,
+    costIncreaseFactor: 1.6,
+    effect: { type: 'value', value: 1 }, // Increases fish per click by 1 per level
   },
 ];
 
