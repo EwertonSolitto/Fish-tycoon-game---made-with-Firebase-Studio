@@ -162,14 +162,7 @@ export function ClickableFishGame({
               onAnimationComplete={handleFloatingNumberAnimationComplete}
             />
           ))}
-          {activeFish.length === 0 && floatingNumbers.length === 0 && (
-             <p 
-                className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm p-4 text-center"
-                aria-hidden="true"
-             >
-                Look out for fish! Click them to catch.
-             </p>
-          )}
+         
         </div>
       </CardContent>
     </Card>
