@@ -18,7 +18,7 @@ export function ClickableFish({ id, x, y, onClick, size = 32 }: ClickableFishPro
       type="button"
       aria-label="Click to catch fish"
       onClick={() => onClick(id, x, y)} // Pass x and y here
-      className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary rounded-full p-1"
+      className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-transform hover:scale-110 focus:outline-none rounded-full p-1"
       style={{
         left: `${x}%`,
         top: `${y}%`,
@@ -32,3 +32,4 @@ export function ClickableFish({ id, x, y, onClick, size = 32 }: ClickableFishPro
     </button>
   );
 }
+
