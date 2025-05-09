@@ -66,17 +66,35 @@ export default function FishWorldTycoonPage() {
     setPurchasedUpgrades({});
     setGlobalRateMultiplier(1);
 
-    // Reset minigame state
-    setMinigameMaxFish(INITIAL_MINIGAME_MAX_FISH);
-    setMinigameFishLifetime(INITIAL_MINIGAME_FISH_LIFETIME_MS);
-    setMinigameFishValue(INITIAL_MINIGAME_FISH_VALUE);
-    
+    // Reset and initialize minigame state
     const initialMinigameUpgradeLevels: Record<string, number> = {};
     const initialMinigameUpgradeCosts: Record<string, number> = {};
+    
+    let currentMaxFish = INITIAL_MINIGAME_MAX_FISH;
+    let currentLifetime = INITIAL_MINIGAME_FISH_LIFETIME_MS;
+    let currentValue = INITIAL_MINIGAME_FISH_VALUE;
+
     MINIGAME_UPGRADES_DATA.forEach(up => {
-      initialMinigameUpgradeLevels[up.id] = 0;
-      initialMinigameUpgradeCosts[up.id] = up.initialCost;
+      initialMinigameUpgradeLevels[up.id] = 1; // Start all minigame upgrades at level 1
+      initialMinigameUpgradeCosts[up.id] = up.initialCost; // Cost to go from L1 to L2
+
+      // Apply the effect of this upgrade being at level 1 to the initial stats
+      switch (up.effect.type) {
+        case 'maxFish':
+          currentMaxFish += up.effect.value;
+          break;
+        case 'lifetime':
+          currentLifetime += up.effect.value;
+          break;
+        case 'value':
+          currentValue += up.effect.value;
+          break;
+      }
     });
+    
+    setMinigameMaxFish(currentMaxFish);
+    setMinigameFishLifetime(currentLifetime);
+    setMinigameFishValue(currentValue);
     setMinigameUpgradeLevels(initialMinigameUpgradeLevels);
     setNextMinigameUpgradeCosts(initialMinigameUpgradeCosts);
 
@@ -183,7 +201,7 @@ export default function FishWorldTycoonPage() {
     const upgradeData = MINIGAME_UPGRADES_DATA.find(up => up.id === upgradeId);
     if (!upgradeData) return;
 
-    const currentLevel = minigameUpgradeLevels[upgradeId] || 0;
+    const currentLevel = minigameUpgradeLevels[upgradeId] || 1; // Default to 1 if not found
     if (upgradeData.maxLevel && currentLevel >= upgradeData.maxLevel) {
       toast({ title: "Max Level Reached", description: `${upgradeData.name} is already at its maximum level.`, variant: "default" });
       return;
@@ -205,6 +223,7 @@ export default function FishWorldTycoonPage() {
         [upgradeId]: Math.ceil(cost * upgradeData.costIncreaseFactor),
       }));
 
+      // Apply the direct effect to the minigame's state variables
       switch (upgradeData.effect.type) {
         case 'maxFish':
           setMinigameMaxFish(prev => prev + upgradeData.effect.value);
@@ -304,7 +323,7 @@ export default function FishWorldTycoonPage() {
           <h2 className="text-2xl font-semibold mb-4 text-center sm:text-left">Catching Fish Upgrades</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {MINIGAME_UPGRADES_DATA.map(upgrade => {
-              const currentLevel = minigameUpgradeLevels[upgrade.id] || 0;
+              const currentLevel = minigameUpgradeLevels[upgrade.id] || 1; // Default to 1
               const nextCost = nextMinigameUpgradeCosts[upgrade.id] || upgrade.initialCost;
               const canAfford = fish >= nextCost;
               const isMaxLevel = upgrade.maxLevel ? currentLevel >= upgrade.maxLevel : false;

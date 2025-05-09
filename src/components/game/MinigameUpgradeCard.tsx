@@ -5,7 +5,7 @@ import type React from 'react';
 import type { MinigameUpgradeData } from '@/config/gameData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Zap, CheckCircle2, TrendingUp, ShieldCheck } from 'lucide-react';
+import { DollarSign, Zap, CheckCircle2, TrendingUp, ShieldCheck, Info } from 'lucide-react';
 
 interface MinigameUpgradeCardProps {
   upgrade: MinigameUpgradeData;
@@ -26,16 +26,24 @@ export function MinigameUpgradeCard({
 }: MinigameUpgradeCardProps) {
   const IconComponent = upgrade.icon;
 
-  let effectDescription = "";
+  const actualCurrentLevel = currentLevel === 0 ? 1 : currentLevel; // Ensure level is at least 1 for display
+  const currentBonusValue = actualCurrentLevel * upgrade.effect.value;
+  
+  let currentBonusDescription = "";
+  let nextLevelEffectDescription = "";
+
   switch (upgrade.effect.type) {
     case 'maxFish':
-      effectDescription = `+${upgrade.effect.value} max fish`;
+      currentBonusDescription = `+${currentBonusValue} Max Fish`;
+      nextLevelEffectDescription = `Adds +${upgrade.effect.value} Max Fish`;
       break;
     case 'lifetime':
-      effectDescription = `+${(upgrade.effect.value / 1000).toFixed(1)}s lifetime`;
+      currentBonusDescription = `+${(currentBonusValue / 1000).toFixed(1)}s Fish Lifetime`;
+      nextLevelEffectDescription = `Adds +${(upgrade.effect.value / 1000).toFixed(1)}s Fish Lifetime`;
       break;
     case 'value':
-      effectDescription = `+${upgrade.effect.value} fish per catch`;
+      currentBonusDescription = `+${currentBonusValue} Fish Value`;
+      nextLevelEffectDescription = `Adds +${upgrade.effect.value} Fish Value`;
       break;
   }
 
@@ -51,15 +59,20 @@ export function MinigameUpgradeCard({
         </CardHeader>
         <CardContent className="space-y-2 pt-2 pb-4">
           <p className="text-sm font-medium flex items-center">
-            <TrendingUp className="h-4 w-4 mr-1 text-muted-foreground" /> Current Level: {currentLevel}
+            <TrendingUp className="h-4 w-4 mr-1 text-muted-foreground" /> Current Level: {actualCurrentLevel}
           </p>
-          <p className="text-sm text-muted-foreground">
-            Effect per Level: {effectDescription}
+          <p className="text-sm text-muted-foreground flex items-center">
+             <Info className="h-4 w-4 mr-1 text-muted-foreground" /> Current Bonus: {currentBonusDescription}
           </p>
           {!isMaxLevel && (
-            <p className="text-sm font-medium flex items-center">
-              <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Upgrade Cost: {Math.ceil(nextCost).toLocaleString('en-US')} fish
-            </p>
+            <>
+              <p className="text-sm text-muted-foreground flex items-center">
+                <Info className="h-4 w-4 mr-1 text-muted-foreground" /> Next Upgrade: {nextLevelEffectDescription}
+              </p>
+              <p className="text-sm font-medium flex items-center">
+                <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Upgrade Cost: {Math.ceil(nextCost).toLocaleString('en-US')} fish
+              </p>
+            </>
           )}
            {isMaxLevel && (
             <p className="text-sm font-semibold flex items-center text-primary">
@@ -78,9 +91,9 @@ export function MinigameUpgradeCard({
             onClick={() => onPurchase(upgrade.id)} 
             disabled={!canAfford}
             className="w-full"
-            aria-label={`Upgrade ${upgrade.name} to level ${currentLevel + 1}`}
+            aria-label={`Upgrade ${upgrade.name} to level ${actualCurrentLevel + 1}`}
           >
-            <Zap className="mr-2 h-4 w-4" /> Upgrade (Lvl {currentLevel + 1})
+            <Zap className="mr-2 h-4 w-4" /> Upgrade (Lvl {actualCurrentLevel + 1})
           </Button>
         )}
       </CardFooter>
