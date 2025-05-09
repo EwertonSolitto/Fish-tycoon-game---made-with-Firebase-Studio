@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -22,6 +21,12 @@ import {
 } from '@/config/gameData';
 import { RotateCcw } from 'lucide-react';
 import { ClickableFishGame } from '@/components/game/ClickableFishGame';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 // State for each type of fisherman owned
 interface FishermanTypeState {
@@ -67,7 +72,6 @@ export default function FishWorldTycoonPage() {
     setGlobalRateMultiplier(1);
 
     // Reset and initialize minigame state
-    // Set initial minigame stats DIRECTLY to the base values defined in gameData
     setMinigameMaxFish(INITIAL_MINIGAME_MAX_FISH);
     setMinigameFishLifetime(INITIAL_MINIGAME_FISH_LIFETIME_MS);
     setMinigameFishValue(INITIAL_MINIGAME_FISH_VALUE);
@@ -76,8 +80,8 @@ export default function FishWorldTycoonPage() {
     const initialMinigameUpgradeCosts: Record<string, number> = {};
     
     MINIGAME_UPGRADES_DATA.forEach(up => {
-      initialMinigameUpgradeLevels[up.id] = 1; // Start all minigame upgrades at level 1
-      initialMinigameUpgradeCosts[up.id] = up.initialCost; // Cost to go from L1 to L2
+      initialMinigameUpgradeLevels[up.id] = 1; 
+      initialMinigameUpgradeCosts[up.id] = up.initialCost; 
     });
     
     setMinigameUpgradeLevels(initialMinigameUpgradeLevels);
@@ -208,7 +212,6 @@ export default function FishWorldTycoonPage() {
         [upgradeId]: Math.ceil(cost * upgradeData.costIncreaseFactor),
       }));
 
-      // Apply the direct effect to the minigame's state variables
       switch (upgradeData.effect.type) {
         case 'maxFish':
           setMinigameMaxFish(prev => prev + upgradeData.effect.value);
@@ -257,78 +260,93 @@ export default function FishWorldTycoonPage() {
       </div>
 
       <main className="w-full max-w-6xl space-y-8">
-        <section>
-          <h2 className="text-2xl font-semibold mb-4 text-center sm:text-left">Hire & Manage Crew</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FISHERMAN_TYPES.map(type => {
-              const typeState = ownedFishermanTypes[type.id] || { quantity: 0, level: 1, currentCrewUpgradeCost: type.baseUpgradeCost };
-              const canAffordHire = fish >= (nextFishermanCosts[type.id] || type.initialCost);
-              const canAffordCrewUpgrade = fish >= typeState.currentCrewUpgradeCost && typeState.quantity > 0;
-              
-              return (
-                <HireableFishermanCard
-                  key={type.id}
-                  fishermanType={type}
-                  onHire={handleHireFisherman}
-                  currentHireCost={nextFishermanCosts[type.id] || type.initialCost}
-                  canAffordHire={canAffordHire}
+        <Accordion type="multiple" className="w-full space-y-0" defaultValue={["hire-crew", "research-upgrades", "minigame-upgrades"]}>
+          <AccordionItem value="hire-crew" className="border-b">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <h2 className="text-2xl font-semibold text-center sm:text-left flex-1">Hire &amp; Manage Crew</h2>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+                {FISHERMAN_TYPES.map(type => {
+                  const typeState = ownedFishermanTypes[type.id] || { quantity: 0, level: 1, currentCrewUpgradeCost: type.baseUpgradeCost };
+                  const canAffordHire = fish >= (nextFishermanCosts[type.id] || type.initialCost);
+                  const canAffordCrewUpgrade = fish >= typeState.currentCrewUpgradeCost && typeState.quantity > 0;
                   
-                  ownedQuantity={typeState.quantity}
-                  currentLevel={typeState.level}
-                  currentCrewUpgradeCost={typeState.currentCrewUpgradeCost}
-                  onUpgrade={handleUpgradeFishermanType}
-                  canAffordCrewUpgrade={canAffordCrewUpgrade}
-                  globalRateMultiplier={globalRateMultiplier}
-                />
-              );
-            })}
-          </div>
-        </section>
+                  return (
+                    <HireableFishermanCard
+                      key={type.id}
+                      fishermanType={type}
+                      onHire={handleHireFisherman}
+                      currentHireCost={nextFishermanCosts[type.id] || type.initialCost}
+                      canAffordHire={canAffordHire}
+                      
+                      ownedQuantity={typeState.quantity}
+                      currentLevel={typeState.level}
+                      currentCrewUpgradeCost={typeState.currentCrewUpgradeCost}
+                      onUpgrade={handleUpgradeFishermanType}
+                      canAffordCrewUpgrade={canAffordCrewUpgrade}
+                      globalRateMultiplier={globalRateMultiplier}
+                    />
+                  );
+                })}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        <Separator className="my-6" />
-
-        <section>
-          <h2 className="text-2xl font-semibold mb-4 text-center sm:text-left">Research Upgrades</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {GLOBAL_UPGRADES_DATA.map(upgrade => (
-              <PurchasableUpgradeCard
-                key={upgrade.id}
-                upgrade={upgrade}
-                onPurchase={handlePurchaseGlobalUpgrade}
-                isPurchased={!!purchasedUpgrades[upgrade.id]}
-                canAfford={fish >= upgrade.cost}
-              />
-            ))}
-          </div>
-        </section>
-
-        <Separator className="my-6" />
+          <AccordionItem value="research-upgrades" className="border-b">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <h2 className="text-2xl font-semibold text-center sm:text-left flex-1">Research Upgrades</h2>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+                {GLOBAL_UPGRADES_DATA.map(upgrade => (
+                  <PurchasableUpgradeCard
+                    key={upgrade.id}
+                    upgrade={upgrade}
+                    onPurchase={handlePurchaseGlobalUpgrade}
+                    isPurchased={!!purchasedUpgrades[upgrade.id]}
+                    canAfford={fish >= upgrade.cost}
+                  />
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
         
-        <section>
-          <h2 className="text-2xl font-semibold mb-4 text-center sm:text-left">Catching Fish Upgrades</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {MINIGAME_UPGRADES_DATA.map(upgrade => {
-              const currentLevel = minigameUpgradeLevels[upgrade.id] || 1;
-              const nextCost = nextMinigameUpgradeCosts[upgrade.id] || upgrade.initialCost;
-              const canAfford = fish >= nextCost;
-              const isMaxLevel = upgrade.maxLevel ? currentLevel >= upgrade.maxLevel : false;
+          <AccordionItem value="minigame-upgrades" className="border-b">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <h2 className="text-2xl font-semibold text-center sm:text-left flex-1">Catching Fish Upgrades</h2>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+                {MINIGAME_UPGRADES_DATA.map(upgrade => {
+                  const currentLevel = minigameUpgradeLevels[upgrade.id] || 1;
+                  const nextCost = nextMinigameUpgradeCosts[upgrade.id] || upgrade.initialCost;
+                  const canAfford = fish >= nextCost;
+                  const isMaxLevel = upgrade.maxLevel ? currentLevel >= upgrade.maxLevel : false;
 
-              return (
-                <MinigameUpgradeCard
-                  key={upgrade.id}
-                  upgrade={upgrade}
-                  onPurchase={handlePurchaseMinigameUpgrade}
-                  currentLevel={currentLevel}
-                  nextCost={nextCost}
-                  canAfford={canAfford && !isMaxLevel}
-                  isMaxLevel={isMaxLevel}
-                />
-              );
-            })}
-          </div>
-        </section>
+                  return (
+                    <MinigameUpgradeCard
+                      key={upgrade.id}
+                      upgrade={upgrade}
+                      onPurchase={handlePurchaseMinigameUpgrade}
+                      currentLevel={currentLevel}
+                      nextCost={nextCost}
+                      canAfford={canAfford && !isMaxLevel}
+                      isMaxLevel={isMaxLevel}
+                    />
+                  );
+                })}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
         
-        <Separator className="my-6" />
+        {/* This Separator is now between the Accordion block and the footer.
+            It was previously between "Catching Fish Upgrades" and the footer.
+            If AccordionItem's bottom border is sufficient, this could be removed,
+            but it offers a slightly larger visual separation. Let's keep it for now.
+        */}
+        <Separator className="my-6" /> 
         
         <footer className="w-full flex justify-center py-6">
             <Button onClick={resetGame} variant="outline">
@@ -340,3 +358,6 @@ export default function FishWorldTycoonPage() {
     </div>
   );
 }
+
+
+    
