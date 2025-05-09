@@ -22,7 +22,7 @@ export const FISHERMAN_TYPES: FishermanType[] = [
     icon: Users,
     initialCost: 20,
     costIncreaseFactor: 1.15,
-    baseRate: 0.1,
+    baseRate: 1,
     baseUpgradeCost: 25,
     upgradeCostIncreaseFactor: 1.3,
   },
@@ -86,5 +86,5 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
   },
 ];
 
-export const INITIAL_FISH_COUNT = 10;
+export const INITIAL_FISH_COUNT = 20;
 export const GAME_TICK_INTERVAL_MS = 1000; // 1 second

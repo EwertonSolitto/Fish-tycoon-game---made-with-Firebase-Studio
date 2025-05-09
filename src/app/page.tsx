@@ -1,46 +1,50 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { FishermanType } from '@/config/gameData';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { FishDisplay } from '@/components/game/FishDisplay';
 import { HireableFishermanCard } from '@/components/game/HireableFishermanCard';
-import { OwnedFishermanCard } from '@/components/game/OwnedFishermanCard';
+import { OwnedFishermanTypeCard } from '@/components/game/OwnedFishermanTypeCard'; // New component
 import { PurchasableUpgradeCard } from '@/components/game/PurchasableUpgradeCard';
 import { FISHERMAN_TYPES, GLOBAL_UPGRADES_DATA, INITIAL_FISH_COUNT, GAME_TICK_INTERVAL_MS } from '@/config/gameData';
 import { RotateCcw } from 'lucide-react';
 
-interface HiredFisherman {
-  instanceId: string;
-  typeId: string;
-  name: string;
+// State for each type of fisherman owned
+interface FishermanTypeState {
+  quantity: number;
   level: number;
-  currentUpgradeCost: number;
+  currentUnitUpgradeCost: number; // Cost to upgrade ONE fisherman of this type to the next level
 }
 
 export default function FishWorldTycoonPage() {
   const [fish, setFish] = useState<number>(INITIAL_FISH_COUNT);
-  const [hiredFishermen, setHiredFishermen] = useState<HiredFisherman[]>([]);
+  const [ownedFishermanTypes, setOwnedFishermanTypes] = useState<Record<string, FishermanTypeState>>({});
   const [purchasedUpgrades, setPurchasedUpgrades] = useState<Record<string, boolean>>({});
   const [globalRateMultiplier, setGlobalRateMultiplier] = useState<number>(1);
   const [nextFishermanCosts, setNextFishermanCosts] = useState<Record<string, number>>({});
-  const [numHiredByType, setNumHiredByType] = useState<Record<string, number>>({});
-
 
   const { toast } = useToast();
 
   const initializeGameState = useCallback(() => {
     const initialCosts: Record<string, number> = {};
-    const initialCounts: Record<string, number> = {};
+    const initialOwnedTypes: Record<string, FishermanTypeState> = {};
+
     FISHERMAN_TYPES.forEach(ft => {
       initialCosts[ft.id] = ft.initialCost;
-      initialCounts[ft.id] = 0;
+      initialOwnedTypes[ft.id] = {
+        quantity: 0,
+        level: 1,
+        currentUnitUpgradeCost: ft.baseUpgradeCost,
+      };
     });
+
     setNextFishermanCosts(initialCosts);
-    setNumHiredByType(initialCounts);
+    setOwnedFishermanTypes(initialOwnedTypes);
     setFish(INITIAL_FISH_COUNT);
-    setHiredFishermen([]);
     setPurchasedUpgrades({});
     setGlobalRateMultiplier(1);
   }, []);
@@ -49,23 +53,20 @@ export default function FishWorldTycoonPage() {
     initializeGameState();
   }, [initializeGameState]);
 
-
-  const calculateFishermanRate = useCallback((typeId: string, level: number): number => {
-    const fishermanType = FISHERMAN_TYPES.find(ft => ft.id === typeId);
-    if (!fishermanType) return 0;
-    return fishermanType.baseRate * level * globalRateMultiplier;
-  }, [globalRateMultiplier]);
-
-  const fishermenWithRates = useMemo(() => {
-    return hiredFishermen.map(f => ({
-      ...f,
-      currentRate: calculateFishermanRate(f.typeId, f.level),
-    }));
-  }, [hiredFishermen, calculateFishermanRate]);
-
   const totalFishPerSecond = useMemo(() => {
-    return fishermenWithRates.reduce((total, fisherman) => total + fisherman.currentRate, 0);
-  }, [fishermenWithRates]);
+    let total = 0;
+    for (const typeId in ownedFishermanTypes) {
+      const typeState = ownedFishermanTypes[typeId];
+      if (typeState.quantity > 0) {
+        const fishermanType = FISHERMAN_TYPES.find(ft => ft.id === typeId);
+        if (fishermanType) {
+          const ratePerUnit = fishermanType.baseRate * typeState.level * globalRateMultiplier;
+          total += ratePerUnit * typeState.quantity;
+        }
+      }
+    }
+    return total;
+  }, [ownedFishermanTypes, globalRateMultiplier]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -82,22 +83,21 @@ export default function FishWorldTycoonPage() {
 
     if (fish >= cost) {
       setFish(prevFish => prevFish - cost);
-      const newFisherman: HiredFisherman = {
-        instanceId: crypto.randomUUID(),
-        typeId: fishermanType.id,
-        name: `${fishermanType.name} #${(numHiredByType[typeId] || 0) + 1}`,
-        level: 1,
-        currentUpgradeCost: fishermanType.baseUpgradeCost,
-      };
-      setHiredFishermen(prev => [...prev, newFisherman]);
+
+      setOwnedFishermanTypes(prevTypes => {
+        const currentTypeState = prevTypes[typeId];
+        return {
+          ...prevTypes,
+          [typeId]: {
+            ...currentTypeState,
+            quantity: currentTypeState.quantity + 1,
+          },
+        };
+      });
       
       setNextFishermanCosts(prevCosts => ({
         ...prevCosts,
-        [typeId]: cost * fishermanType.costIncreaseFactor,
-      }));
-      setNumHiredByType(prevCounts => ({
-        ...prevCounts,
-        [typeId]: (prevCounts[typeId] || 0) + 1,
+        [typeId]: Math.ceil(cost * fishermanType.costIncreaseFactor),
       }));
 
       toast({ title: "Fisherman Hired!", description: `You hired a ${fishermanType.name}.` });
@@ -106,28 +106,30 @@ export default function FishWorldTycoonPage() {
     }
   };
 
-  const handleUpgradeFisherman = (instanceId: string) => {
-    setHiredFishermen(prev => prev.map(f => {
-      if (f.instanceId === instanceId) {
-        const fishermanType = FISHERMAN_TYPES.find(ft => ft.id === f.typeId);
-        if (!fishermanType) return f;
+  const handleUpgradeFishermanType = (typeId: string) => {
+    const fishermanType = FISHERMAN_TYPES.find(ft => ft.id === typeId);
+    const currentTypeState = ownedFishermanTypes[typeId];
 
-        const upgradeCost = f.currentUpgradeCost;
-        if (fish >= upgradeCost) {
-          setFish(prevFish => prevFish - upgradeCost);
-          toast({ title: "Fisherman Upgraded!", description: `${f.name} is now level ${f.level + 1}.` });
-          return {
-            ...f,
-            level: f.level + 1,
-            currentUpgradeCost: upgradeCost * fishermanType.upgradeCostIncreaseFactor,
-          };
-        } else {
-          toast({ title: "Not enough fish!", description: `You need ${Math.ceil(upgradeCost).toLocaleString('en-US')} fish to upgrade.`, variant: "destructive" });
-          return f;
-        }
-      }
-      return f;
-    }));
+    if (!fishermanType || !currentTypeState || currentTypeState.quantity === 0) return;
+
+    const totalUpgradeCost = currentTypeState.currentUnitUpgradeCost * currentTypeState.quantity;
+
+    if (fish >= totalUpgradeCost) {
+      setFish(prevFish => prevFish - totalUpgradeCost);
+      
+      setOwnedFishermanTypes(prevTypes => ({
+        ...prevTypes,
+        [typeId]: {
+          ...currentTypeState,
+          level: currentTypeState.level + 1,
+          currentUnitUpgradeCost: Math.ceil(currentTypeState.currentUnitUpgradeCost * fishermanType.upgradeCostIncreaseFactor),
+        },
+      }));
+
+      toast({ title: `${fishermanType.name} Crew Upgraded!`, description: `Your ${fishermanType.name} crew is now level ${currentTypeState.level + 1}.` });
+    } else {
+      toast({ title: "Not enough fish!", description: `You need ${Math.ceil(totalUpgradeCost).toLocaleString('en-US')} fish to upgrade your ${fishermanType.name} crew.`, variant: "destructive" });
+    }
   };
 
   const handlePurchaseGlobalUpgrade = (upgradeId: string) => {
@@ -148,6 +150,10 @@ export default function FishWorldTycoonPage() {
     initializeGameState();
     toast({ title: "Game Reset", description: "You're starting fresh!"});
   };
+
+  const totalHiredFishermen = useMemo(() => {
+    return Object.values(ownedFishermanTypes).reduce((sum, ts) => sum + ts.quantity, 0);
+  }, [ownedFishermanTypes]);
 
 
   return (
@@ -179,20 +185,29 @@ export default function FishWorldTycoonPage() {
         <Separator className="my-6" />
 
         {/* My Fishermen Section */}
-        {hiredFishermen.length > 0 && (
+        {totalHiredFishermen > 0 && (
           <section>
-            <h2 className="text-2xl font-semibold mb-4 text-center sm:text-left">My Active Crew ({hiredFishermen.length})</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-center sm:text-left">My Active Crew ({totalHiredFishermen})</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {fishermenWithRates.map(f => {
-                const typeData = FISHERMAN_TYPES.find(ft => ft.id === f.typeId);
+              {Object.entries(ownedFishermanTypes).map(([typeId, typeState]) => {
+                if (typeState.quantity === 0) return null;
+                const typeData = FISHERMAN_TYPES.find(ft => ft.id === typeId);
                 if (!typeData) return null;
+
+                const totalUpgradeCostForType = typeState.currentUnitUpgradeCost * typeState.quantity;
+                const canAffordThisTypeUpgrade = fish >= totalUpgradeCostForType;
+                const ratePerUnit = typeData.baseRate * typeState.level * globalRateMultiplier;
+                const totalRateForType = ratePerUnit * typeState.quantity;
+
                 return (
-                  <OwnedFishermanCard
-                    key={f.instanceId}
-                    fisherman={f}
+                  <OwnedFishermanTypeCard
+                    key={typeId}
                     fishermanTypeData={typeData}
-                    onUpgrade={handleUpgradeFisherman}
-                    canAffordUpgrade={fish >= f.currentUpgradeCost}
+                    typeState={typeState}
+                    currentRateForType={totalRateForType}
+                    totalUpgradeCost={totalUpgradeCostForType}
+                    onUpgrade={handleUpgradeFishermanType}
+                    canAffordUpgrade={canAffordThisTypeUpgrade}
                   />
                 );
               })}
@@ -200,7 +215,7 @@ export default function FishWorldTycoonPage() {
           </section>
         )}
         
-        {hiredFishermen.length > 0 && <Separator className="my-6" />}
+        {totalHiredFishermen > 0 && <Separator className="my-6" />}
 
 
         {/* Global Upgrades Section */}
@@ -231,3 +246,4 @@ export default function FishWorldTycoonPage() {
     </div>
   );
 }
+
