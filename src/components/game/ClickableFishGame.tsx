@@ -34,7 +34,7 @@ interface ClickableFishGameProps {
 
 const DEFAULT_GAME_AREA_HEIGHT = 200;
 const DEFAULT_MAX_FISH_ON_SCREEN = 5;
-const DEFAULT_FISH_LIFETIME_MS = 3000; // 3 seconds
+const DEFAULT_FISH_LIFETIME_MS = 8000; // 8 seconds
 const DEFAULT_MIN_SPAWN_INTERVAL_MS = 1000; // 1 second
 const DEFAULT_MAX_SPAWN_INTERVAL_MS = 2000; // 2 seconds
 const MIN_FISH_SIZE = 24; // pixels
@@ -168,3 +168,4 @@ export function ClickableFishGame({
     </Card>
   );
 }
+
