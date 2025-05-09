@@ -9,7 +9,17 @@ import { useToast } from '@/hooks/use-toast';
 import { FishDisplay } from '@/components/game/FishDisplay';
 import { HireableFishermanCard } from '@/components/game/HireableFishermanCard';
 import { PurchasableUpgradeCard } from '@/components/game/PurchasableUpgradeCard';
-import { FISHERMAN_TYPES, GLOBAL_UPGRADES_DATA, INITIAL_FISH_COUNT, GAME_TICK_INTERVAL_MS } from '@/config/gameData';
+import { MinigameUpgradeCard } from '@/components/game/MinigameUpgradeCard';
+import { 
+  FISHERMAN_TYPES, 
+  GLOBAL_UPGRADES_DATA, 
+  MINIGAME_UPGRADES_DATA,
+  INITIAL_FISH_COUNT, 
+  GAME_TICK_INTERVAL_MS,
+  INITIAL_MINIGAME_MAX_FISH,
+  INITIAL_MINIGAME_FISH_LIFETIME_MS,
+  INITIAL_MINIGAME_FISH_VALUE
+} from '@/config/gameData';
 import { RotateCcw } from 'lucide-react';
 import { ClickableFishGame } from '@/components/game/ClickableFishGame';
 
@@ -26,6 +36,12 @@ export default function FishWorldTycoonPage() {
   const [purchasedUpgrades, setPurchasedUpgrades] = useState<Record<string, boolean>>({});
   const [globalRateMultiplier, setGlobalRateMultiplier] = useState<number>(1);
   const [nextFishermanCosts, setNextFishermanCosts] = useState<Record<string, number>>({});
+
+  // Minigame state
+  const [minigameMaxFish, setMinigameMaxFish] = useState<number>(INITIAL_MINIGAME_MAX_FISH);
+  const [minigameFishLifetime, setMinigameFishLifetime] = useState<number>(INITIAL_MINIGAME_FISH_LIFETIME_MS);
+  const [minigameFishValue, setMinigameFishValue] = useState<number>(INITIAL_MINIGAME_FISH_VALUE);
+  const [purchasedMinigameUpgrades, setPurchasedMinigameUpgrades] = useState<Record<string, boolean>>({});
 
   const { toast } = useToast();
 
@@ -47,6 +63,12 @@ export default function FishWorldTycoonPage() {
     setFish(INITIAL_FISH_COUNT);
     setPurchasedUpgrades({});
     setGlobalRateMultiplier(1);
+
+    // Reset minigame state
+    setMinigameMaxFish(INITIAL_MINIGAME_MAX_FISH);
+    setMinigameFishLifetime(INITIAL_MINIGAME_FISH_LIFETIME_MS);
+    setMinigameFishValue(INITIAL_MINIGAME_FISH_VALUE);
+    setPurchasedMinigameUpgrades({});
   }, []);
 
   useEffect(() => {
@@ -145,23 +167,45 @@ export default function FishWorldTycoonPage() {
       toast({ title: "Not enough fish!", description: `You need ${upgradeData.cost.toLocaleString('en-US')} fish for this upgrade.`, variant: "destructive" });
     }
   };
+
+  const handlePurchaseMinigameUpgrade = (upgradeId: string) => {
+    const upgradeData = MINIGAME_UPGRADES_DATA.find(up => up.id === upgradeId);
+    if (!upgradeData || purchasedMinigameUpgrades[upgradeId]) return;
+
+    if (fish >= upgradeData.cost) {
+      setFish(prevFish => prevFish - upgradeData.cost);
+      setPurchasedMinigameUpgrades(prev => ({ ...prev, [upgradeId]: true }));
+
+      switch (upgradeData.effect.type) {
+        case 'maxFish':
+          setMinigameMaxFish(prev => prev + upgradeData.effect.value);
+          break;
+        case 'lifetime':
+          setMinigameFishLifetime(prev => prev + upgradeData.effect.value);
+          break;
+        case 'value':
+          setMinigameFishValue(prev => prev + upgradeData.effect.value);
+          break;
+      }
+      toast({ title: "Minigame Upgrade Purchased!", description: `${upgradeData.name} is now active.`, variant: "default" });
+    } else {
+      toast({ title: "Not enough fish!", description: `You need ${upgradeData.cost.toLocaleString('en-US')} fish for this upgrade.`, variant: "destructive" });
+    }
+  };
   
   const resetGame = () => {
     initializeGameState();
     toast({ title: "Game Reset", description: "You're starting fresh!", variant: "default"});
   };
 
-  const handleMinigameFishCaught = useCallback((count: number) => {
-    setFish(prevFish => prevFish + count);
-    // Toast removed from here
+  const handleMinigameFishCaught = useCallback((caughtValue: number) => {
+    setFish(prevFish => prevFish + caughtValue);
   }, []);
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 md:p-8 space-y-6 bg-background text-foreground">
       
-      {/* Top section: Title/Counter on Left (40%), Minigame on Right (60%) on medium screens and up */}
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-5 gap-6 items-start">
-        {/* Left Column: Title and Fish Counter */}
         <div className="flex flex-col space-y-4 items-center md:items-start md:col-span-2">
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-center md:text-left" style={{ color: 'hsl(var(--primary-foreground))', WebkitTextStroke: '1px hsl(var(--primary))', textShadow:'2px 2px 4px hsla(var(--primary), 0.5)'}}>
             Fish World Tycoon
@@ -169,14 +213,17 @@ export default function FishWorldTycoonPage() {
           <FishDisplay fishCount={fish} fishPerSecond={totalFishPerSecond} />
         </div>
 
-        {/* Right Column: Minigame */}
         <div className="flex justify-center w-full md:col-span-3">
-          <ClickableFishGame onFishCaught={handleMinigameFishCaught} />
+          <ClickableFishGame 
+            onFishCaught={handleMinigameFishCaught}
+            maxFishOnScreen={minigameMaxFish}
+            fishLifetimeMs={minigameFishLifetime}
+            fishValueOnClick={minigameFishValue}
+          />
         </div>
       </div>
 
       <main className="w-full max-w-6xl space-y-8">
-        {/* Hire Fishermen Section */}
         <section>
           <h2 className="text-2xl font-semibold mb-4 text-center sm:text-left">Hire & Manage Crew</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -207,7 +254,6 @@ export default function FishWorldTycoonPage() {
 
         <Separator className="my-6" />
 
-        {/* Global Upgrades Section */}
         <section>
           <h2 className="text-2xl font-semibold mb-4 text-center sm:text-left">Research Upgrades</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -217,6 +263,23 @@ export default function FishWorldTycoonPage() {
                 upgrade={upgrade}
                 onPurchase={handlePurchaseGlobalUpgrade}
                 isPurchased={!!purchasedUpgrades[upgrade.id]}
+                canAfford={fish >= upgrade.cost}
+              />
+            ))}
+          </div>
+        </section>
+
+        <Separator className="my-6" />
+        
+        <section>
+          <h2 className="text-2xl font-semibold mb-4 text-center sm:text-left">Catching Fish Upgrades</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {MINIGAME_UPGRADES_DATA.map(upgrade => (
+              <MinigameUpgradeCard
+                key={upgrade.id}
+                upgrade={upgrade}
+                onPurchase={handlePurchaseMinigameUpgrade}
+                isPurchased={!!purchasedMinigameUpgrades[upgrade.id]}
                 canAfford={fish >= upgrade.cost}
               />
             ))}

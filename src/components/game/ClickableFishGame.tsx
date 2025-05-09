@@ -30,6 +30,7 @@ interface ClickableFishGameProps {
   fishLifetimeMs?: number;
   minSpawnIntervalMs?: number;
   maxSpawnIntervalMs?: number;
+  fishValueOnClick?: number; // New prop for the value of each fish
 }
 
 const DEFAULT_GAME_AREA_HEIGHT = 200;
@@ -48,6 +49,7 @@ export function ClickableFishGame({
   fishLifetimeMs = DEFAULT_FISH_LIFETIME_MS,
   minSpawnIntervalMs = DEFAULT_MIN_SPAWN_INTERVAL_MS,
   maxSpawnIntervalMs = DEFAULT_MAX_SPAWN_INTERVAL_MS,
+  fishValueOnClick = 1, // Default value if not provided
 }: ClickableFishGameProps) {
   const [activeFish, setActiveFish] = useState<ActiveFish[]>([]);
   const [floatingNumbers, setFloatingNumbers] = useState<FloatingNumberItem[]>([]);
@@ -106,16 +108,16 @@ export function ClickableFishGame({
 
   const handleFishClick = useCallback(
     (fishId: string, fishX: number, fishY: number) => {
-      onFishCaught(1);
+      onFishCaught(fishValueOnClick);
       setActiveFish((prev) => prev.filter((fish) => fish.id !== fishId));
 
       const newFloatingNumberId = `fn-${Date.now()}-${Math.random().toString(36).substring(2,7)}`;
       setFloatingNumbers((prev) => [
         ...prev,
-        { id: newFloatingNumberId, key: newFloatingNumberId, value: 1, x: fishX, y: fishY },
+        { id: newFloatingNumberId, key: newFloatingNumberId, value: fishValueOnClick, x: fishX, y: fishY },
       ]);
     },
-    [onFishCaught]
+    [onFishCaught, fishValueOnClick]
   );
 
   const handleFloatingNumberAnimationComplete = useCallback((id: string) => {
@@ -168,4 +170,3 @@ export function ClickableFishGame({
     </Card>
   );
 }
-

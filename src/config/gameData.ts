@@ -1,6 +1,6 @@
 
 import type React from 'react';
-import { Users, Ship, Briefcase, Settings2, Zap, PackagePlusIcon } from 'lucide-react';
+import { Users, Ship, Briefcase, Settings2, Zap, PackagePlusIcon, UsersRound, Timer, CircleDollarSign } from 'lucide-react';
 
 // Using React.ElementType for Lucide icons
 export interface FishermanType {
@@ -87,5 +87,51 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
   },
 ];
 
+export interface MinigameUpgradeEffect {
+  type: 'maxFish' | 'lifetime' | 'value';
+  value: number;
+}
+export interface MinigameUpgradeData {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ElementType;
+  cost: number;
+  effect: MinigameUpgradeEffect;
+}
+
+export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
+  {
+    id: 'increase_max_fish_1',
+    name: 'More Crowded Waters',
+    description: 'Allows up to 2 more fish to appear in the minigame.',
+    icon: UsersRound,
+    cost: 300,
+    effect: { type: 'maxFish', value: 2 },
+  },
+  {
+    id: 'increase_lifetime_1',
+    name: 'Patient Fish',
+    description: 'Minigame fish stay on screen for 2 seconds longer.',
+    icon: Timer,
+    cost: 250,
+    effect: { type: 'lifetime', value: 2000 }, // 2000ms = 2 seconds
+  },
+  {
+    id: 'increase_value_1',
+    name: 'Lucky Catch',
+    description: 'Each fish caught in the minigame is now worth +1 more fish.',
+    icon: CircleDollarSign,
+    cost: 400,
+    effect: { type: 'value', value: 1 },
+  },
+];
+
+
 export const INITIAL_FISH_COUNT = 20;
 export const GAME_TICK_INTERVAL_MS = 1000; // 1 second
+
+// Initial values for minigame parameters
+export const INITIAL_MINIGAME_MAX_FISH = 5;
+export const INITIAL_MINIGAME_FISH_LIFETIME_MS = 8000;
+export const INITIAL_MINIGAME_FISH_VALUE = 1;
