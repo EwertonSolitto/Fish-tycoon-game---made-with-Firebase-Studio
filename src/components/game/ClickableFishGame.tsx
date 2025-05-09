@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ClickableFish } from './ClickableFish';
+import { FloatingNumber } from './FloatingNumber';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ActiveFish {
@@ -11,6 +12,14 @@ interface ActiveFish {
   y: number; // percentage
   createdAt: number;
   size: number; // px
+}
+
+interface FloatingNumberItem {
+  id: string; // Unique ID for the floating number itself
+  key: string; // React key
+  value: number;
+  x: number; // percentage position
+  y: number; // percentage position
 }
 
 interface ClickableFishGameProps {
@@ -33,7 +42,7 @@ const MAX_FISH_SIZE = 40; // pixels
 
 export function ClickableFishGame({
   onFishCaught,
-  gameAreaWidth = 0, // Default to 0 to enable responsive width via '100%'
+  gameAreaWidth = 0, 
   gameAreaHeight = DEFAULT_GAME_AREA_HEIGHT,
   maxFishOnScreen = DEFAULT_MAX_FISH_ON_SCREEN,
   fishLifetimeMs = DEFAULT_FISH_LIFETIME_MS,
@@ -41,6 +50,7 @@ export function ClickableFishGame({
   maxSpawnIntervalMs = DEFAULT_MAX_SPAWN_INTERVAL_MS,
 }: ClickableFishGameProps) {
   const [activeFish, setActiveFish] = useState<ActiveFish[]>([]);
+  const [floatingNumbers, setFloatingNumbers] = useState<FloatingNumberItem[]>([]);
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const spawnTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
   const despawnIntervalIdRef = useRef<NodeJS.Timeout | null>(null);
@@ -95,12 +105,22 @@ export function ClickableFishGame({
   }, [fishLifetimeMs]);
 
   const handleFishClick = useCallback(
-    (fishId: string) => {
+    (fishId: string, fishX: number, fishY: number) => {
       onFishCaught(1);
       setActiveFish((prev) => prev.filter((fish) => fish.id !== fishId));
+
+      const newFloatingNumberId = `fn-${Date.now()}-${Math.random().toString(36).substring(2,7)}`;
+      setFloatingNumbers((prev) => [
+        ...prev,
+        { id: newFloatingNumberId, key: newFloatingNumberId, value: 1, x: fishX, y: fishY },
+      ]);
     },
     [onFishCaught]
   );
+
+  const handleFloatingNumberAnimationComplete = useCallback((id: string) => {
+    setFloatingNumbers((prev) => prev.filter((fn) => fn.id !== id));
+  }, []);
 
   return (
     <Card className="shadow-lg w-full max-w-md md:max-w-2xl mx-auto bg-card/80 backdrop-blur-sm">
@@ -132,7 +152,17 @@ export function ClickableFishGame({
               onClick={handleFishClick}
             />
           ))}
-          {activeFish.length === 0 && (
+          {floatingNumbers.map((fn) => (
+            <FloatingNumber
+              key={fn.key}
+              id={fn.id}
+              value={fn.value}
+              x={fn.x}
+              y={fn.y}
+              onAnimationComplete={handleFloatingNumberAnimationComplete}
+            />
+          ))}
+          {activeFish.length === 0 && floatingNumbers.length === 0 && (
              <p 
                 className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm p-4 text-center"
                 aria-hidden="true"

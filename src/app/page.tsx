@@ -153,12 +153,8 @@ export default function FishWorldTycoonPage() {
 
   const handleMinigameFishCaught = useCallback((count: number) => {
     setFish(prevFish => prevFish + count);
-    toast({
-      title: `Caught ${count} fish!`,
-      description: "Quick catch!",
-      variant: 'default', 
-    });
-  }, [toast]);
+    // Toast removed from here
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 md:p-8 space-y-6 bg-background text-foreground">
