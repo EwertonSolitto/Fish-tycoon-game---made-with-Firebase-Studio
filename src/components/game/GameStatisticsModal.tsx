@@ -275,34 +275,39 @@ export function GameStatisticsModal({
                  {!purchasedUpgrades['booster_bait'] && !purchasedUpgrades['automated_trawling_net'] && !purchasedUpgrades['market_analysis'] && (
                   <p className="text-muted-foreground text-sm">No special global effects purchased or active yet.</p>
                 )}
+
+                <div className="pt-4 flex justify-center">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive">
+                        <RotateCcw className="mr-2 h-4 w-4" /> Reset Game
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete all your game progress and reset the game to its initial state.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={onResetGame}>
+                          Yes, Reset Game
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             </section>
           </div>
         </ScrollArea>
         <DialogFooter className="pt-4">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <RotateCcw className="mr-2 h-4 w-4" /> Reset Game
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete all your game progress and reset the game to its initial state.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={onResetGame}>
-                  Yes, Reset Game
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+         {/* Footer can be empty or have a close button if needed, Reset is moved */}
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
