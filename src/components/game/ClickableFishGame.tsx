@@ -5,6 +5,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ClickableFish } from './ClickableFish';
 import { FloatingNumber } from './FloatingNumber';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { INITIAL_MINIGAME_MAX_FISH, INITIAL_MINIGAME_FISH_LIFETIME_MS, INITIAL_MIN_SPAWN_INTERVAL_MS, INITIAL_MAX_SPAWN_INTERVAL_MS, INITIAL_MINIGAME_FISH_VALUE, INITIAL_CRITICAL_FISH_CHANCE, MINIGAME_CRITICAL_FISH_MIN_MULTIPLIER, MINIGAME_CRITICAL_FISH_MAX_MULTIPLIER } from '@/config/gameData';
+
 
 interface ActiveFish {
   id: string;
@@ -33,29 +35,24 @@ interface ClickableFishGameProps {
   minSpawnIntervalMs?: number;
   maxSpawnIntervalMs?: number;
   fishValueOnClick?: number; // Base value for a normal fish
+  criticalFishChance?: number;
 }
 
 const DEFAULT_GAME_AREA_HEIGHT = 200;
-const DEFAULT_MAX_FISH_ON_SCREEN = 5;
-const DEFAULT_FISH_LIFETIME_MS = 8000; // 8 seconds
-const DEFAULT_MIN_SPAWN_INTERVAL_MS = 1000; // 1 second
-const DEFAULT_MAX_SPAWN_INTERVAL_MS = 2000; // 2 seconds
-const MIN_FISH_SIZE = 24; // pixels
-const MAX_FISH_SIZE = 40; // pixels
+const MIN_FISH_SIZE = 32; // pixels
+const MAX_FISH_SIZE = 48; // pixels
 
-const CRITICAL_FISH_CHANCE = 0.01; // 1%
-const CRITICAL_FISH_MIN_MULTIPLIER = 10; // 1000%
-const CRITICAL_FISH_MAX_MULTIPLIER = 30; // 3000%
 
 export function ClickableFishGame({
   onFishCaught,
   gameAreaWidth = 0, 
   gameAreaHeight = DEFAULT_GAME_AREA_HEIGHT,
-  maxFishOnScreen = DEFAULT_MAX_FISH_ON_SCREEN,
-  fishLifetimeMs = DEFAULT_FISH_LIFETIME_MS,
-  minSpawnIntervalMs = DEFAULT_MIN_SPAWN_INTERVAL_MS,
-  maxSpawnIntervalMs = DEFAULT_MAX_SPAWN_INTERVAL_MS,
-  fishValueOnClick = 1, 
+  maxFishOnScreen = INITIAL_MINIGAME_MAX_FISH,
+  fishLifetimeMs = INITIAL_MINIGAME_FISH_LIFETIME_MS,
+  minSpawnIntervalMs = INITIAL_MIN_SPAWN_INTERVAL_MS,
+  maxSpawnIntervalMs = INITIAL_MAX_SPAWN_INTERVAL_MS,
+  fishValueOnClick = INITIAL_MINIGAME_FISH_VALUE, 
+  criticalFishChance = INITIAL_CRITICAL_FISH_CHANCE,
 }: ClickableFishGameProps) {
   const [activeFish, setActiveFish] = useState<ActiveFish[]>([]);
   const [floatingNumbers, setFloatingNumbers] = useState<FloatingNumberItem[]>([]);
@@ -76,9 +73,9 @@ export function ClickableFishGame({
     let isCritical = false;
     let value = fishValueOnClick;
 
-    if (Math.random() < CRITICAL_FISH_CHANCE) {
+    if (Math.random() < criticalFishChance) {
       isCritical = true;
-      const multiplier = Math.random() * (CRITICAL_FISH_MAX_MULTIPLIER - CRITICAL_FISH_MIN_MULTIPLIER) + CRITICAL_FISH_MIN_MULTIPLIER;
+      const multiplier = Math.random() * (MINIGAME_CRITICAL_FISH_MAX_MULTIPLIER - MINIGAME_CRITICAL_FISH_MIN_MULTIPLIER) + MINIGAME_CRITICAL_FISH_MIN_MULTIPLIER;
       value = Math.floor(fishValueOnClick * multiplier);
     }
     
@@ -91,7 +88,7 @@ export function ClickableFishGame({
       return prev;
     });
 
-  }, [activeFish.length, maxFishOnScreen, fishValueOnClick]);
+  }, [activeFish.length, maxFishOnScreen, fishValueOnClick, criticalFishChance]);
   
   const scheduleNextSpawn = useCallback(() => {
     if (spawnTimeoutIdRef.current) {
@@ -100,16 +97,19 @@ export function ClickableFishGame({
     const nextSpawnTime = Math.random() * (maxSpawnIntervalMs - minSpawnIntervalMs) + minSpawnIntervalMs;
     spawnTimeoutIdRef.current = setTimeout(() => {
       spawnFish();
-      scheduleNextSpawn();
+      scheduleNextSpawn(); // Reschedule after spawning
     }, nextSpawnTime);
   }, [spawnFish, minSpawnIntervalMs, maxSpawnIntervalMs]);
 
+
+  // Effect for scheduling spawns - depends on dynamic intervals
   useEffect(() => {
     scheduleNextSpawn();
     return () => {
       if (spawnTimeoutIdRef.current) clearTimeout(spawnTimeoutIdRef.current);
     };
-  }, [scheduleNextSpawn]);
+  }, [scheduleNextSpawn]); // Re-run if scheduleNextSpawn changes (due to interval props changing)
+
 
   useEffect(() => {
     despawnIntervalIdRef.current = setInterval(() => {

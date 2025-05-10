@@ -13,7 +13,7 @@ interface ClickableFishProps {
   isCritical?: boolean;
 }
 
-export function ClickableFish({ id, x, y, onClick, size = 32, isCritical = false }: ClickableFishProps) {
+export function ClickableFish({ id, x, y, onClick, size = 40, isCritical = false }: ClickableFishProps) {
   return (
     <button
       type="button"
