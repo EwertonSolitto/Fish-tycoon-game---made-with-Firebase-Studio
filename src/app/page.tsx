@@ -35,7 +35,7 @@ import {
   DEFAULT_MARKET_ANALYSIS_MULTIPLIER,
   MAX_OFFLINE_PROGRESS_MS,
 } from '@/config/gameData';
-import { RotateCcw, BarChartHorizontalBig } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { ClickableFishGame } from '@/components/game/ClickableFishGame';
 import {
   Accordion,
@@ -433,15 +433,11 @@ export default function FishWorldTycoonPage() {
       });
       setNextFishermanCosts(prevCosts => ({ ...prevCosts, [typeId]: Math.ceil(cost * fishermanType.costIncreaseFactor) }));
       
-      // Update timer for this fisherman type
       const newInterval = calculateFishermanInterval(fishermanType, newQuantity);
       setFishermanTimers(prevTimers => ({
         ...prevTimers,
         [typeId]: {
           currentIntervalMs: newInterval,
-          // If it's the first one, start timer. Otherwise, existing timer continues but will use new interval on next cycle.
-          // Or, to make it immediately faster, adjust nextCollectionTimestamp based on new interval and time already passed in current cycle.
-          // For simplicity, let's adjust:
           nextCollectionTimestamp: prevTimers[typeId] ? 
             (prevTimers[typeId].nextCollectionTimestamp - prevTimers[typeId].currentIntervalMs + newInterval) : 
             (Date.now() + newInterval),
@@ -462,7 +458,6 @@ export default function FishWorldTycoonPage() {
     if (fish >= crewUpgradeCost) {
       setFish(prevFish => prevFish - crewUpgradeCost);
       setOwnedFishermanTypes(prevTypes => ({ ...prevTypes, [typeId]: { ...currentTypeState, level: currentTypeState.level + 1, currentCrewUpgradeCost: Math.ceil(currentTypeState.currentCrewUpgradeCost * fishermanType.upgradeCostIncreaseFactor) } }));
-      // No timer changes needed for upgrade, as it affects amount not speed.
       toast({ title: `${fishermanType.name} Crew Upgraded!`, description: `Level ${currentTypeState.level + 1}.`, variant: "default" });
     } else {
       toast({ title: "Not enough fish!", description: `You need ${Math.ceil(crewUpgradeCost).toLocaleString('en-US')} fish.`, variant: "destructive" });
@@ -625,6 +620,56 @@ export default function FishWorldTycoonPage() {
             Fish World Tycoon
           </h1>
           <FishDisplay fishCount={fish} averageFishPerSecond={averageTotalFishPerSecond} />
+          <div className="w-full flex justify-center md:justify-start mt-2">
+            <GameStatisticsModal
+                totalFish={fish}
+                averageTotalFishPerSecond={averageTotalFishPerSecond}
+                ownedFishermanTypes={ownedFishermanTypes}
+                fishermanTypesData={FISHERMAN_TYPES}
+                fishermanTimers={fishermanTimers}
+                globalRateMultiplier={globalRateMultiplier}
+                effectiveGlobalRateMultiplier={effectiveGlobalRateMultiplier}
+                currentMinigameParams={currentMinigameParams}
+                baseMinigameStats={{
+                  maxFish: minigameMaxFish,
+                  lifetime: minigameFishLifetime,
+                  value: minigameFishValue,
+                  critChance: criticalFishChance,
+                  minSpawnMs: minigameMinSpawnMs,
+                  maxSpawnMs: minigameMaxSpawnMs,
+                }}
+                isBoosterActive={isBoosterActive}
+                boosterEndTime={boosterEndTime}
+                purchasedUpgrades={purchasedUpgrades}
+                boosterBaitGlobalUpgrade={boosterBaitGlobalUpgrade}
+                effectiveBoosterBaitChance={effectiveBoosterBaitChance}
+                effectiveBoosterBaitDurationMs={effectiveBoosterBaitDurationMs}
+                autoNetGlobalUpgrade={autoNetGlobalUpgrade}
+                autoNetCatchAmount={autoNetCatchAmount}
+                autoNetBaseInterval={autoNetGlobalUpgrade?.effects?.autoNetIntervalMs ?? DEFAULT_AUTO_NET_INTERVAL_MS}
+                isMarketAnalysisActive={isMarketAnalysisActive}
+                marketAnalysisEndTime={marketAnalysisEndTime}
+                marketAnalysisGlobalUpgrade={marketAnalysisGlobalUpgrade}
+                gameConfigData={{
+                    INITIAL_MINIGAME_MAX_FISH,
+                    INITIAL_MINIGAME_FISH_LIFETIME_MS,
+                    INITIAL_MINIGAME_FISH_VALUE,
+                    INITIAL_CRITICAL_FISH_CHANCE,
+                    INITIAL_MIN_SPAWN_INTERVAL_MS,
+                    INITIAL_MAX_SPAWN_INTERVAL_MS,
+                    DEFAULT_BOOSTER_BAIT_CHANCE,
+                    DEFAULT_BOOSTER_BAIT_DURATION_MS,
+                    DEFAULT_BOOSTER_SPAWN_INTERVAL_MS,
+                    DEFAULT_BOOSTER_MAX_FISH_MULTIPLIER,
+                    DEFAULT_AUTO_NET_CATCH_AMOUNT,
+                    DEFAULT_AUTO_NET_INTERVAL_MS,
+                    DEFAULT_MARKET_ANALYSIS_CHANCE,
+                    DEFAULT_MARKET_ANALYSIS_DURATION_MS,
+                    DEFAULT_MARKET_ANALYSIS_MULTIPLIER
+                }}
+                onResetGame={resetGame}
+              />
+          </div>
           {isBoosterActive && <p className="text-center md:text-left text-lg font-semibold text-primary animate-pulse">BOOSTER ACTIVE!</p>}
           {isMarketAnalysisActive && <p className="text-center md:text-left text-lg font-semibold text-accent animate-pulse">MARKET SURGE! (x2 Fish Income)</p>}
         </div>
@@ -743,58 +788,6 @@ export default function FishWorldTycoonPage() {
         
         <Separator className="my-6" /> 
         
-        <footer className="w-full flex justify-center items-center space-x-4 py-6">
-            <GameStatisticsModal
-              totalFish={fish}
-              averageTotalFishPerSecond={averageTotalFishPerSecond}
-              ownedFishermanTypes={ownedFishermanTypes}
-              fishermanTypesData={FISHERMAN_TYPES}
-              fishermanTimers={fishermanTimers}
-              globalRateMultiplier={globalRateMultiplier}
-              effectiveGlobalRateMultiplier={effectiveGlobalRateMultiplier}
-              currentMinigameParams={currentMinigameParams}
-              baseMinigameStats={{
-                maxFish: minigameMaxFish,
-                lifetime: minigameFishLifetime,
-                value: minigameFishValue,
-                critChance: criticalFishChance,
-                minSpawnMs: minigameMinSpawnMs,
-                maxSpawnMs: minigameMaxSpawnMs,
-              }}
-              isBoosterActive={isBoosterActive}
-              boosterEndTime={boosterEndTime}
-              purchasedUpgrades={purchasedUpgrades}
-              boosterBaitGlobalUpgrade={boosterBaitGlobalUpgrade}
-              effectiveBoosterBaitChance={effectiveBoosterBaitChance}
-              effectiveBoosterBaitDurationMs={effectiveBoosterBaitDurationMs}
-              autoNetGlobalUpgrade={autoNetGlobalUpgrade}
-              autoNetCatchAmount={autoNetCatchAmount}
-              autoNetBaseInterval={autoNetGlobalUpgrade?.effects?.autoNetIntervalMs ?? DEFAULT_AUTO_NET_INTERVAL_MS}
-              isMarketAnalysisActive={isMarketAnalysisActive}
-              marketAnalysisEndTime={marketAnalysisEndTime}
-              marketAnalysisGlobalUpgrade={marketAnalysisGlobalUpgrade}
-              gameConfigData={{
-                  INITIAL_MINIGAME_MAX_FISH,
-                  INITIAL_MINIGAME_FISH_LIFETIME_MS,
-                  INITIAL_MINIGAME_FISH_VALUE,
-                  INITIAL_CRITICAL_FISH_CHANCE,
-                  INITIAL_MIN_SPAWN_INTERVAL_MS,
-                  INITIAL_MAX_SPAWN_INTERVAL_MS,
-                  DEFAULT_BOOSTER_BAIT_CHANCE,
-                  DEFAULT_BOOSTER_BAIT_DURATION_MS,
-                  DEFAULT_BOOSTER_SPAWN_INTERVAL_MS,
-                  DEFAULT_BOOSTER_MAX_FISH_MULTIPLIER,
-                  DEFAULT_AUTO_NET_CATCH_AMOUNT,
-                  DEFAULT_AUTO_NET_INTERVAL_MS,
-                  DEFAULT_MARKET_ANALYSIS_CHANCE,
-                  DEFAULT_MARKET_ANALYSIS_DURATION_MS,
-                  DEFAULT_MARKET_ANALYSIS_MULTIPLIER
-              }}
-            />
-            <Button onClick={resetGame} variant="outline">
-                <RotateCcw className="mr-2 h-4 w-4" /> Reset Game
-            </Button>
-        </footer>
       </main>
     </div>
   );

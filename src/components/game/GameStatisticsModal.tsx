@@ -9,10 +9,22 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BarChartHorizontalBig, Users, Ship, Briefcase, Settings2, Zap, PackagePlusIcon, Flame, Anchor, BarChart3, FishIcon, TrendingUp, Percent, Clock, Maximize, Hourglass, Crosshair, HelpCircle, TimerIcon } from 'lucide-react';
+import { BarChartHorizontalBig, Users, Ship, Briefcase, Settings2, Zap, PackagePlusIcon, Flame, Anchor, BarChart3, FishIcon, TrendingUp, Percent, Clock, Maximize, Hourglass, Crosshair, HelpCircle, TimerIcon, RotateCcw } from 'lucide-react';
 import type { FishermanType, GlobalUpgradeData } from '@/config/gameData';
 
 interface FishermanTypeState {
@@ -84,6 +96,7 @@ interface GameStatisticsModalProps {
   marketAnalysisEndTime: number | null;
   marketAnalysisGlobalUpgrade?: GlobalUpgradeData;
   gameConfigData: GameConfigData;
+  onResetGame: () => void;
 }
 
 const StatItem: React.FC<{ icon?: React.ElementType; label: string; value: string | number; unit?: string; description?: string }> = ({ icon: Icon, label, value, unit, description }) => (
@@ -132,6 +145,7 @@ export function GameStatisticsModal({
   marketAnalysisEndTime,
   marketAnalysisGlobalUpgrade,
   gameConfigData,
+  onResetGame,
 }: GameStatisticsModalProps) {
   
   return (
@@ -260,9 +274,31 @@ export function GameStatisticsModal({
                 )}
               </div>
             </section>
-
           </div>
         </ScrollArea>
+        <DialogFooter className="pt-4">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                <RotateCcw className="mr-2 h-4 w-4" /> Reset Game
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete all your game progress and reset the game to its initial state.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onResetGame}>
+                  Yes, Reset Game
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
