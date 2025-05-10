@@ -156,7 +156,7 @@ export default function FishWorldTycoonPage() {
                 if (collectionsMissed > 0) {
                     const fishPerCollection = typeData.baseCollectionAmount * 
                                               ownedTypeState.level * 
-                                              (loadedState.globalRateMultiplier ?? 1);
+                                              (loadedState.globalRateMultiplier ?? 1); // Use saved globalRateMultiplier for offline calc
                     offlineFishGains += collectionsMissed * fishPerCollection;
                 }
             }
@@ -438,7 +438,7 @@ export default function FishWorldTycoonPage() {
         ...prevTimers,
         [typeId]: {
           currentIntervalMs: newInterval,
-          nextCollectionTimestamp: prevTimers[typeId] ? 
+          nextCollectionTimestamp: prevTimers[typeId] && prevTimers[typeId].currentIntervalMs !== Infinity ? 
             (prevTimers[typeId].nextCollectionTimestamp - prevTimers[typeId].currentIntervalMs + newInterval) : 
             (Date.now() + newInterval),
         }
@@ -610,6 +610,55 @@ export default function FishWorldTycoonPage() {
     );
   }, [purchasedUpgrades]);
 
+  const gameStatsModalProps = {
+    totalFish: fish,
+    averageTotalFishPerSecond: averageTotalFishPerSecond,
+    ownedFishermanTypes: ownedFishermanTypes,
+    fishermanTypesData: FISHERMAN_TYPES,
+    fishermanTimers: fishermanTimers,
+    globalRateMultiplier: globalRateMultiplier,
+    effectiveGlobalRateMultiplier: effectiveGlobalRateMultiplier,
+    currentMinigameParams: currentMinigameParams,
+    baseMinigameStats:{
+      maxFish: minigameMaxFish,
+      lifetime: minigameFishLifetime,
+      value: minigameFishValue,
+      critChance: criticalFishChance,
+      minSpawnMs: minigameMinSpawnMs,
+      maxSpawnMs: minigameMaxSpawnMs,
+    },
+    isBoosterActive: isBoosterActive,
+    boosterEndTime: boosterEndTime,
+    purchasedUpgrades: purchasedUpgrades,
+    boosterBaitGlobalUpgrade: boosterBaitGlobalUpgrade,
+    effectiveBoosterBaitChance: effectiveBoosterBaitChance,
+    effectiveBoosterBaitDurationMs: effectiveBoosterBaitDurationMs,
+    autoNetGlobalUpgrade: autoNetGlobalUpgrade,
+    autoNetCatchAmount: autoNetCatchAmount,
+    autoNetBaseInterval: autoNetGlobalUpgrade?.effects?.autoNetIntervalMs ?? DEFAULT_AUTO_NET_INTERVAL_MS,
+    isMarketAnalysisActive: isMarketAnalysisActive,
+    marketAnalysisEndTime: marketAnalysisEndTime,
+    marketAnalysisGlobalUpgrade: marketAnalysisGlobalUpgrade,
+    gameConfigData:{
+        INITIAL_MINIGAME_MAX_FISH,
+        INITIAL_MINIGAME_FISH_LIFETIME_MS,
+        INITIAL_MINIGAME_FISH_VALUE,
+        INITIAL_CRITICAL_FISH_CHANCE,
+        INITIAL_MIN_SPAWN_INTERVAL_MS,
+        INITIAL_MAX_SPAWN_INTERVAL_MS,
+        DEFAULT_BOOSTER_BAIT_CHANCE,
+        DEFAULT_BOOSTER_BAIT_DURATION_MS,
+        DEFAULT_BOOSTER_SPAWN_INTERVAL_MS,
+        DEFAULT_BOOSTER_MAX_FISH_MULTIPLIER,
+        DEFAULT_AUTO_NET_CATCH_AMOUNT,
+        DEFAULT_AUTO_NET_INTERVAL_MS,
+        DEFAULT_MARKET_ANALYSIS_CHANCE,
+        DEFAULT_MARKET_ANALYSIS_DURATION_MS,
+        DEFAULT_MARKET_ANALYSIS_MULTIPLIER
+    },
+    onResetGame: resetGame,
+  };
+
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 md:p-8 space-y-6 bg-background text-foreground">
@@ -620,70 +669,30 @@ export default function FishWorldTycoonPage() {
             Fish World Tycoon
           </h1>
           <FishDisplay fishCount={fish} averageFishPerSecond={averageTotalFishPerSecond} />
-          <div className="w-full flex justify-center md:justify-start mt-2">
-            <GameStatisticsModal
-                totalFish={fish}
-                averageTotalFishPerSecond={averageTotalFishPerSecond}
-                ownedFishermanTypes={ownedFishermanTypes}
-                fishermanTypesData={FISHERMAN_TYPES}
-                fishermanTimers={fishermanTimers}
-                globalRateMultiplier={globalRateMultiplier}
-                effectiveGlobalRateMultiplier={effectiveGlobalRateMultiplier}
-                currentMinigameParams={currentMinigameParams}
-                baseMinigameStats={{
-                  maxFish: minigameMaxFish,
-                  lifetime: minigameFishLifetime,
-                  value: minigameFishValue,
-                  critChance: criticalFishChance,
-                  minSpawnMs: minigameMinSpawnMs,
-                  maxSpawnMs: minigameMaxSpawnMs,
-                }}
-                isBoosterActive={isBoosterActive}
-                boosterEndTime={boosterEndTime}
-                purchasedUpgrades={purchasedUpgrades}
-                boosterBaitGlobalUpgrade={boosterBaitGlobalUpgrade}
-                effectiveBoosterBaitChance={effectiveBoosterBaitChance}
-                effectiveBoosterBaitDurationMs={effectiveBoosterBaitDurationMs}
-                autoNetGlobalUpgrade={autoNetGlobalUpgrade}
-                autoNetCatchAmount={autoNetCatchAmount}
-                autoNetBaseInterval={autoNetGlobalUpgrade?.effects?.autoNetIntervalMs ?? DEFAULT_AUTO_NET_INTERVAL_MS}
-                isMarketAnalysisActive={isMarketAnalysisActive}
-                marketAnalysisEndTime={marketAnalysisEndTime}
-                marketAnalysisGlobalUpgrade={marketAnalysisGlobalUpgrade}
-                gameConfigData={{
-                    INITIAL_MINIGAME_MAX_FISH,
-                    INITIAL_MINIGAME_FISH_LIFETIME_MS,
-                    INITIAL_MINIGAME_FISH_VALUE,
-                    INITIAL_CRITICAL_FISH_CHANCE,
-                    INITIAL_MIN_SPAWN_INTERVAL_MS,
-                    INITIAL_MAX_SPAWN_INTERVAL_MS,
-                    DEFAULT_BOOSTER_BAIT_CHANCE,
-                    DEFAULT_BOOSTER_BAIT_DURATION_MS,
-                    DEFAULT_BOOSTER_SPAWN_INTERVAL_MS,
-                    DEFAULT_BOOSTER_MAX_FISH_MULTIPLIER,
-                    DEFAULT_AUTO_NET_CATCH_AMOUNT,
-                    DEFAULT_AUTO_NET_INTERVAL_MS,
-                    DEFAULT_MARKET_ANALYSIS_CHANCE,
-                    DEFAULT_MARKET_ANALYSIS_DURATION_MS,
-                    DEFAULT_MARKET_ANALYSIS_MULTIPLIER
-                }}
-                onResetGame={resetGame}
-              />
+          {/* Stats Button for Desktop */}
+          <div className="w-full hidden md:flex justify-center md:justify-start mt-2">
+            <GameStatisticsModal {...gameStatsModalProps} />
           </div>
           {isBoosterActive && <p className="text-center md:text-left text-lg font-semibold text-primary animate-pulse">BOOSTER ACTIVE!</p>}
           {isMarketAnalysisActive && <p className="text-center md:text-left text-lg font-semibold text-accent animate-pulse">MARKET SURGE! (x2 Fish Income)</p>}
         </div>
 
-        <div className="flex justify-center w-full md:col-span-3">
-          <ClickableFishGame 
-            onFishCaught={handleMinigameFishCaught}
-            maxFishOnScreen={currentMinigameParams.maxFish}
-            fishLifetimeMs={currentMinigameParams.lifetime}
-            fishValueOnClick={currentMinigameParams.value}
-            criticalFishChance={currentMinigameParams.critChance}
-            minSpawnIntervalMs={currentMinigameParams.minSpawnMs}
-            maxSpawnIntervalMs={currentMinigameParams.maxSpawnMs}
-          />
+        <div className="flex flex-col items-center w-full md:col-span-3">
+          <div className="flex justify-center w-full">
+            <ClickableFishGame 
+              onFishCaught={handleMinigameFishCaught}
+              maxFishOnScreen={currentMinigameParams.maxFish}
+              fishLifetimeMs={currentMinigameParams.lifetime}
+              fishValueOnClick={currentMinigameParams.value}
+              criticalFishChance={currentMinigameParams.critChance}
+              minSpawnIntervalMs={currentMinigameParams.minSpawnMs}
+              maxSpawnIntervalMs={currentMinigameParams.maxSpawnMs}
+            />
+          </div>
+           {/* Stats Button for Mobile */}
+          <div className="w-full flex md:hidden justify-center mt-4">
+            <GameStatisticsModal {...gameStatsModalProps} />
+          </div>
         </div>
       </div>
 
