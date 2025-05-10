@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -455,10 +456,17 @@ export default function FishWorldTycoonPage() {
     const fishermanType = FISHERMAN_TYPES.find(ft => ft.id === typeId);
     if (!fishermanType) return;
     const cost = nextFishermanCosts[typeId] || fishermanType.initialCost;
+    const currentQuantity = ownedFishermanTypes[typeId]?.quantity || 0;
+    const currentInterval = fishermanTimers[typeId]?.currentIntervalMs || fishermanType.baseCollectionTimeMs;
+
+    if (currentInterval <= GLOBAL_MIN_COLLECTION_TIME_MS) {
+        toast({ title: "Max Speed Reached!", description: `${fishermanType.name} crew is already at maximum collection speed.`, variant: "default" });
+        return;
+    }
 
     if (fish >= cost) {
       setFish(prevFish => prevFish - cost);
-      const newQuantity = (ownedFishermanTypes[typeId]?.quantity || 0) + 1;
+      const newQuantity = currentQuantity + 1;
       setOwnedFishermanTypes(prevTypes => {
         const currentTypeState = prevTypes[typeId] || { quantity: 0, level: 1, currentCrewUpgradeCost: fishermanType.baseUpgradeCost };
         return { ...prevTypes, [typeId]: { ...currentTypeState, quantity: newQuantity } };
@@ -735,7 +743,7 @@ export default function FishWorldTycoonPage() {
       </div>
 
       <main className="w-full max-w-6xl space-y-8">
-        <Accordion type="multiple" className="w-full space-y-0" defaultValue={["hire-crew", "research-upgrades", "minigame-upgrades"]}>
+        <Accordion type="multiple" className="w-full space-y-0" defaultValue={["hire-crew", "minigame-upgrades", "research-upgrades"]}>
           <AccordionItem value="hire-crew" className="border-b">
             <AccordionTrigger className="hover:no-underline py-4">
               <h2 className="text-2xl font-semibold text-center sm:text-left flex-1">Hire &amp; Manage Crew</h2>
@@ -745,7 +753,8 @@ export default function FishWorldTycoonPage() {
                 {FISHERMAN_TYPES.map(type => {
                   const typeState = ownedFishermanTypes[type.id] || { quantity: 0, level: 1, currentCrewUpgradeCost: type.baseUpgradeCost };
                   const timerState = fishermanTimers[type.id];
-                  const canAffordHire = fish >= (nextFishermanCosts[type.id] || type.initialCost);
+                  const currentInterval = timerState?.currentIntervalMs || type.baseCollectionTimeMs;
+                  const canAffordHire = fish >= (nextFishermanCosts[type.id] || type.initialCost) && currentInterval > GLOBAL_MIN_COLLECTION_TIME_MS;
                   const canAffordCrewUpgrade = fish >= typeState.currentCrewUpgradeCost && typeState.quantity > 0;
                   
                   const collectionIntervalSeconds = timerState && timerState.currentIntervalMs !== Infinity 
@@ -755,6 +764,8 @@ export default function FishWorldTycoonPage() {
                   const currentCollectionAmount = typeState.quantity > 0 
                     ? calculateCollectionAmount(type, typeState, effectiveGlobalRateMultiplier)
                     : calculateCollectionAmount(type, {...typeState, quantity: 1, level:1}, effectiveGlobalRateMultiplier); // Show L1, Q1 amount if none owned
+                  
+                  const isHireMaxed = currentInterval <= GLOBAL_MIN_COLLECTION_TIME_MS;
 
                   return (
                     <HireableFishermanCard
@@ -771,32 +782,14 @@ export default function FishWorldTycoonPage() {
                       collectionAmount={currentCollectionAmount}
                       collectionIntervalSeconds={collectionIntervalSeconds}
                       collectionNotification={fishCollectionNotifiers[type.id]}
+                      isHireMaxed={isHireMaxed}
                     />
                   );
                 })}
               </div>
             </AccordionContent>
           </AccordionItem>
-
-          <AccordionItem value="research-upgrades" className="border-b">
-            <AccordionTrigger className="hover:no-underline py-4">
-              <h2 className="text-2xl font-semibold text-center sm:text-left flex-1">Research Upgrades</h2>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
-                {GLOBAL_UPGRADES_DATA.map(upgrade => (
-                  <PurchasableUpgradeCard
-                    key={upgrade.id}
-                    upgrade={upgrade}
-                    onPurchase={handlePurchaseGlobalUpgrade}
-                    isPurchased={!!purchasedUpgrades[upgrade.id]}
-                    canAfford={fish >= upgrade.cost}
-                  />
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        
+          
           <AccordionItem value="minigame-upgrades" className="border-b">
             <AccordionTrigger className="hover:no-underline py-4">
               <h2 className="text-2xl font-semibold text-center sm:text-left flex-1">Catching Fish Upgrades</h2>
@@ -838,6 +831,25 @@ export default function FishWorldTycoonPage() {
               </div>
             </AccordionContent>
           </AccordionItem>
+
+          <AccordionItem value="research-upgrades" className="border-b">
+            <AccordionTrigger className="hover:no-underline py-4">
+              <h2 className="text-2xl font-semibold text-center sm:text-left flex-1">Research Upgrades</h2>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+                {GLOBAL_UPGRADES_DATA.map(upgrade => (
+                  <PurchasableUpgradeCard
+                    key={upgrade.id}
+                    upgrade={upgrade}
+                    onPurchase={handlePurchaseGlobalUpgrade}
+                    isPurchased={!!purchasedUpgrades[upgrade.id]}
+                    canAfford={fish >= upgrade.cost}
+                  />
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
         
         <Separator className="my-6" /> 
@@ -849,3 +861,4 @@ export default function FishWorldTycoonPage() {
 
 
     
+
