@@ -152,9 +152,11 @@ export default function FishWorldTycoonPage() {
   }, []);
   
   const calculateCollectionAmount = useCallback((fishermanType: FishermanType, typeState: FishermanTypeState, currentEffectiveGlobalRateMultiplier: number) => {
-    const baseAmount = fishermanType.baseCollectionAmount;
+    const baseAmountPerUnit = fishermanType.baseCollectionAmount;
     const levelMultiplier = Math.pow(2, typeState.level - 1); // Level 1 = 2^0=1, Level 2 = 2^1=2, Level 3 = 2^2=4, etc.
-    return baseAmount * levelMultiplier * currentEffectiveGlobalRateMultiplier;
+    // Each unit contributes its base amount, scaled by level, to the total haul.
+    // The total quantity of this fisherman type then multiplies this per-unit, per-level amount.
+    return baseAmountPerUnit * typeState.quantity * levelMultiplier * currentEffectiveGlobalRateMultiplier;
   }, []);
 
 
@@ -459,8 +461,8 @@ export default function FishWorldTycoonPage() {
     const currentQuantity = ownedFishermanTypes[typeId]?.quantity || 0;
     const currentInterval = fishermanTimers[typeId]?.currentIntervalMs || fishermanType.baseCollectionTimeMs;
 
-    if (currentInterval <= GLOBAL_MIN_COLLECTION_TIME_MS) {
-        toast({ title: "Max Speed Reached!", description: `${fishermanType.name} crew is already at maximum collection speed.`, variant: "default" });
+    if (currentInterval <= GLOBAL_MIN_COLLECTION_TIME_MS && currentQuantity > 0) { // Check currentQuantity to ensure it's not the initial state for a not-yet-hired type
+        toast({ title: "Max Speed Reached!", description: `${fishermanType.name} crew is already at maximum collection speed. Upgrading their level will increase catch per cycle.`, variant: "default" });
         return;
     }
 
@@ -754,19 +756,21 @@ export default function FishWorldTycoonPage() {
                   const typeState = ownedFishermanTypes[type.id] || { quantity: 0, level: 1, currentCrewUpgradeCost: type.baseUpgradeCost };
                   const timerState = fishermanTimers[type.id];
                   const currentInterval = timerState?.currentIntervalMs || type.baseCollectionTimeMs;
-                  const canAffordHire = fish >= (nextFishermanCosts[type.id] || type.initialCost) && currentInterval > GLOBAL_MIN_COLLECTION_TIME_MS;
+                  
+                  const isHireMaxed = typeState.quantity > 0 && currentInterval <= GLOBAL_MIN_COLLECTION_TIME_MS;
+                  const canAffordHire = fish >= (nextFishermanCosts[type.id] || type.initialCost) && !isHireMaxed;
+
                   const canAffordCrewUpgrade = fish >= typeState.currentCrewUpgradeCost && typeState.quantity > 0;
                   
                   const collectionIntervalSeconds = timerState && timerState.currentIntervalMs !== Infinity 
                     ? (timerState.currentIntervalMs / 1000) 
-                    : (type.baseCollectionTimeMs / 1000); // Default to base if no timer/quantity
+                    : (type.baseCollectionTimeMs / 1000); 
                   
                   const currentCollectionAmount = typeState.quantity > 0 
                     ? calculateCollectionAmount(type, typeState, effectiveGlobalRateMultiplier)
-                    : calculateCollectionAmount(type, {...typeState, quantity: 1, level:1}, effectiveGlobalRateMultiplier); // Show L1, Q1 amount if none owned
+                    // For display if none owned, show what 1 unit at Lvl 1 would collect
+                    : calculateCollectionAmount(type, { quantity: 1, level: 1, currentCrewUpgradeCost: type.baseUpgradeCost }, effectiveGlobalRateMultiplier); 
                   
-                  const isHireMaxed = currentInterval <= GLOBAL_MIN_COLLECTION_TIME_MS;
-
                   return (
                     <HireableFishermanCard
                       key={type.id}
@@ -861,4 +865,5 @@ export default function FishWorldTycoonPage() {
 
 
     
+
 
