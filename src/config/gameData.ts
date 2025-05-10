@@ -10,7 +10,9 @@ export interface FishermanType {
   icon: React.ElementType;
   initialCost: number;
   costIncreaseFactor: number;
-  baseRate: number; // fish per second at level 1
+  baseCollectionAmount: number; // fish collected per cycle at level 1
+  baseCollectionTimeMs: number; // time in MS for one unit to complete a cycle (before quantity scaling)
+  minCollectionTimeMs: number; // minimum possible collection time for this type
   baseUpgradeCost: number; // cost to upgrade the entire crew of this type from L1 to L2
   upgradeCostIncreaseFactor: number;
 }
@@ -19,33 +21,39 @@ export const FISHERMAN_TYPES: FishermanType[] = [
   {
     id: 'novice_fisher',
     name: 'Novice Fisher',
-    description: 'A beginner at sea, eager to learn. Catches a few fish.',
+    description: 'A beginner at sea. Periodically brings in a small catch.',
     icon: Users,
     initialCost: 20,
     costIncreaseFactor: 1.15,
-    baseRate: 1,
-    baseUpgradeCost: 50, 
+    baseCollectionAmount: 5, // Collects 5 fish
+    baseCollectionTimeMs: 8000, // Base time 8 seconds for 1 unit
+    minCollectionTimeMs: 2000, // Fastest is 2 seconds
+    baseUpgradeCost: 50,
     upgradeCostIncreaseFactor: 1.35,
   },
   {
     id: 'seasoned_captain',
     name: 'Seasoned Captain',
-    description: 'Knows the best spots and techniques. Hauls in a good catch.',
+    description: 'Knows the ropes. Periodically hauls in a decent bounty.',
     icon: Ship,
-    initialCost: 200,
+    initialCost: 250,
     costIncreaseFactor: 1.2,
-    baseRate: 5,
+    baseCollectionAmount: 30, // Collects 30 fish
+    baseCollectionTimeMs: 15000, // Base time 15 seconds for 1 unit
+    minCollectionTimeMs: 4000,  // Fastest is 4 seconds
     baseUpgradeCost: 300,
     upgradeCostIncreaseFactor: 1.45,
   },
   {
     id: 'master_angler',
     name: 'Master Angler',
-    description: 'A legend of the deep. Fish practically jump into the boat!',
-    icon: Briefcase, 
-    initialCost: 1000,
+    description: 'A legend of the deep. Periodically lands a massive treasure.',
+    icon: Briefcase,
+    initialCost: 1200,
     costIncreaseFactor: 1.25,
-    baseRate: 25,
+    baseCollectionAmount: 150, // Collects 150 fish
+    baseCollectionTimeMs: 30000, // Base time 30 seconds for 1 unit
+    minCollectionTimeMs: 8000,  // Fastest is 8 seconds
     baseUpgradeCost: 1500,
     upgradeCostIncreaseFactor: 1.55,
   },
@@ -57,11 +65,11 @@ export interface GlobalUpgradeData {
   description: string;
   icon: React.ElementType;
   cost: number;
-  rateMultiplierIncrease?: number; // e.g., 0.1 for +10% to global rate
-  effects?: { // For more complex global upgrades
+  rateMultiplierIncrease?: number; // e.g., 0.1 for +10% to global collection amounts
+  effects?: {
     boosterInitialChance?: number;
     boosterInitialDurationMs?: number;
-    boosterSpawnIntervalMs?: number; 
+    boosterSpawnIntervalMs?: number;
     boosterMaxFishMultiplier?: number;
     autoNetInitialCatchAmount?: number;
     autoNetIntervalMs?: number;
@@ -75,15 +83,15 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
   {
     id: 'sharper_hooks',
     name: 'Sharper Hooks',
-    description: 'Improves fishing tool quality. All fishermen +10% fish rate.',
-    icon: Settings2, 
+    description: 'Improves fishing tool quality. All fishermen +10% fish collection amount.',
+    icon: Settings2,
     cost: 100,
     rateMultiplierIncrease: 0.1,
   },
   {
     id: 'sonar_technology',
     name: 'Sonar Technology',
-    description: 'Advanced fish finding. All fishermen +25% fish rate.',
+    description: 'Advanced fish finding. All fishermen +25% fish collection amount.',
     icon: Zap,
     cost: 500,
     rateMultiplierIncrease: 0.25,
@@ -91,7 +99,7 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
   {
     id: 'bigger_boats',
     name: 'Bigger Boats',
-    description: 'Larger capacity for catches. All fishermen +50% fish rate.',
+    description: 'Larger capacity for catches. All fishermen +50% fish collection amount.',
     icon: PackagePlusIcon,
     cost: 2000,
     rateMultiplierIncrease: 0.5,
@@ -103,10 +111,10 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
     icon: Flame,
     cost: 1500,
     effects: {
-      boosterInitialChance: 0.005, // 0.5%
-      boosterInitialDurationMs: 10000, // 10 seconds
-      boosterSpawnIntervalMs: 200, // Fish spawn every 0.2s during booster
-      boosterMaxFishMultiplier: 2, // Doubles max fish on screen
+      boosterInitialChance: 0.005,
+      boosterInitialDurationMs: 10000,
+      boosterSpawnIntervalMs: 200,
+      boosterMaxFishMultiplier: 2,
     }
   },
   {
@@ -117,7 +125,7 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
     cost: 2500,
     effects: {
       autoNetInitialCatchAmount: 1,
-      autoNetIntervalMs: 15000, // Every 15 seconds
+      autoNetIntervalMs: 15000,
     }
   },
   {
@@ -127,8 +135,8 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
     icon: BarChart3,
     cost: 5000,
     effects: {
-      marketAnalysisChance: 0.01, // 1% chance per second
-      marketAnalysisDurationMs: 15000, // 15 seconds
+      marketAnalysisChance: 0.01,
+      marketAnalysisDurationMs: 15000,
       marketAnalysisMultiplier: 2,
     }
   }
@@ -136,7 +144,7 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
 
 export interface MinigameUpgradeEffect {
   type: 'maxFish' | 'lifetime' | 'value' | 'criticalChance' | 'spawnCooldownReduction' | 'boosterBaitChance' | 'boosterBaitDuration' | 'autoNetCatchAmount';
-  value: number; 
+  value: number;
 }
 export interface MinigameUpgradeData {
   id: string;
@@ -146,8 +154,8 @@ export interface MinigameUpgradeData {
   initialCost: number;
   costIncreaseFactor: number;
   effect: MinigameUpgradeEffect;
-  maxLevel?: number; 
-  requiredGlobalUpgradeId?: string; // If this upgrade depends on a global one
+  maxLevel?: number;
+  requiredGlobalUpgradeId?: string;
 }
 
 export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
@@ -167,7 +175,7 @@ export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
     icon: Timer,
     initialCost: 250,
     costIncreaseFactor: 1.4,
-    effect: { type: 'lifetime', value: 500 }, 
+    effect: { type: 'lifetime', value: 500 },
   },
   {
     id: 'increase_value',
@@ -185,8 +193,8 @@ export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
     icon: Eye,
     initialCost: 600,
     costIncreaseFactor: 1.8,
-    effect: { type: 'criticalChance', value: 0.002 }, // +0.2%
-    maxLevel: 50, // Cap at 10% + initial (e.g. 1% + 10% = 11%)
+    effect: { type: 'criticalChance', value: 0.002 },
+    maxLevel: 50,
   },
   {
     id: 'decrease_spawn_cooldown',
@@ -195,8 +203,8 @@ export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
     icon: FastForward,
     initialCost: 450,
     costIncreaseFactor: 1.55,
-    effect: { type: 'spawnCooldownReduction', value: 100 }, // Reduces min/max spawn interval by 100ms
-    maxLevel: 10, // Max 10 levels, to prevent 0ms cooldown
+    effect: { type: 'spawnCooldownReduction', value: 100 },
+    maxLevel: 10,
   },
   {
     id: 'increase_booster_bait_chance',
@@ -205,9 +213,9 @@ export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
     icon: TrendingUp,
     initialCost: 500,
     costIncreaseFactor: 1.7,
-    effect: { type: 'boosterBaitChance', value: 0.001 }, // +0.1%
+    effect: { type: 'boosterBaitChance', value: 0.001 },
     requiredGlobalUpgradeId: 'booster_bait',
-    maxLevel: 45, // Max 4.5% + initial 0.5% = 5%
+    maxLevel: 45,
   },
   {
     id: 'increase_booster_bait_duration',
@@ -216,7 +224,7 @@ export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
     icon: Clock3,
     initialCost: 750,
     costIncreaseFactor: 1.6,
-    effect: { type: 'boosterBaitDuration', value: 1000 }, // +1 second
+    effect: { type: 'boosterBaitDuration', value: 1000 },
     requiredGlobalUpgradeId: 'booster_bait',
   },
   {
@@ -233,7 +241,7 @@ export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
 
 
 export const INITIAL_FISH_COUNT = 20;
-export const GAME_TICK_INTERVAL_MS = 1000; // 1 second
+export const GAME_TICK_INTERVAL_MS = 200; // Check for collections more frequently
 
 // Initial values for minigame parameters
 export const INITIAL_MINIGAME_MAX_FISH = 5;
@@ -243,7 +251,7 @@ export const INITIAL_CRITICAL_FISH_CHANCE = 0.01; // 1%
 export const MINIGAME_CRITICAL_FISH_MIN_MULTIPLIER = 10;
 export const MINIGAME_CRITICAL_FISH_MAX_MULTIPLIER = 30;
 
-export const INITIAL_MIN_SPAWN_INTERVAL_MS = 1000; 
+export const INITIAL_MIN_SPAWN_INTERVAL_MS = 1000;
 export const INITIAL_MAX_SPAWN_INTERVAL_MS = 2000;
 export const MIN_POSSIBLE_SPAWN_INTERVAL_MS = 150; // Absolute minimum spawn interval
 
@@ -261,3 +269,5 @@ export const DEFAULT_BOOSTER_MAX_FISH_MULTIPLIER = 2;
 export const DEFAULT_MARKET_ANALYSIS_CHANCE = 0.01; // Per second
 export const DEFAULT_MARKET_ANALYSIS_DURATION_MS = 15000;
 export const DEFAULT_MARKET_ANALYSIS_MULTIPLIER = 2;
+
+export const MAX_OFFLINE_PROGRESS_MS = 8 * 60 * 60 * 1000; // 8 hours

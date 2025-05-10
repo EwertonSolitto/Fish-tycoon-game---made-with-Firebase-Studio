@@ -12,12 +12,17 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BarChartHorizontalBig, Users, Ship, Briefcase, Settings2, Zap, PackagePlusIcon, Flame, Anchor, BarChart3, FishIcon, TrendingUp, Percent, Clock, Maximize, Hourglass, Crosshair, ChevronsRight, ChevronsLeft, HelpCircle } from 'lucide-react';
+import { BarChartHorizontalBig, Users, Ship, Briefcase, Settings2, Zap, PackagePlusIcon, Flame, Anchor, BarChart3, FishIcon, TrendingUp, Percent, Clock, Maximize, Hourglass, Crosshair, HelpCircle, TimerIcon } from 'lucide-react';
 import type { FishermanType, GlobalUpgradeData } from '@/config/gameData';
 
 interface FishermanTypeState {
   quantity: number;
   level: number;
+}
+
+interface FishermanTimerState {
+  nextCollectionTimestamp: number;
+  currentIntervalMs: number;
 }
 
 interface CurrentMinigameParams {
@@ -58,11 +63,12 @@ interface GameConfigData {
 
 interface GameStatisticsModalProps {
   totalFish: number;
-  totalFishPerSecond: number;
+  averageTotalFishPerSecond: number; 
   ownedFishermanTypes: Record<string, FishermanTypeState>;
   fishermanTypesData: FishermanType[];
-  globalRateMultiplier: number; // Base multiplier without market surge
-  effectiveGlobalRateMultiplier: number; // Multiplier including market surge
+  fishermanTimers: Record<string, FishermanTimerState>; 
+  globalRateMultiplier: number;
+  effectiveGlobalRateMultiplier: number;
   currentMinigameParams: CurrentMinigameParams;
   baseMinigameStats: BaseMinigameStats;
   isBoosterActive: boolean;
@@ -105,9 +111,10 @@ const formatTimeRemaining = (endTime: number | null): string => {
 
 export function GameStatisticsModal({
   totalFish,
-  totalFishPerSecond,
+  averageTotalFishPerSecond,
   ownedFishermanTypes,
   fishermanTypesData,
+  fishermanTimers,
   globalRateMultiplier,
   effectiveGlobalRateMultiplier,
   currentMinigameParams,
@@ -144,39 +151,58 @@ export function GameStatisticsModal({
         <ScrollArea className="h-[60vh] p-1 pr-3">
           <div className="space-y-6">
             
-            {/* Overall Stats */}
             <section>
               <h3 className="text-xl font-semibold mb-2 text-primary flex items-center"><FishIcon className="mr-2" />Overall</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 bg-card p-3 rounded-md shadow-sm">
-                <StatItem icon={FishIcon} label="Total Fish" value={totalFish} />
-                <StatItem icon={TrendingUp} label="Total Fish/sec" value={totalFishPerSecond.toFixed(2)} unit="FPS" />
-                 <StatItem icon={HelpCircle} label="Global Rate Multiplier" value={`${((effectiveGlobalRateMultiplier -1)*100).toFixed(0)}% Bonus`} description={`Base rate: ${((globalRateMultiplier-1)*100).toFixed(0)}% Bonus, Market Surge: ${isMarketAnalysisActive ? `x${marketAnalysisGlobalUpgrade?.effects?.marketAnalysisMultiplier ?? 1}` : 'Inactive'}`} />
+                <StatItem icon={FishIcon} label="Total Fish" value={Math.floor(totalFish)} />
+                <StatItem icon={TrendingUp} label="Avg. Total Fish/sec" value={averageTotalFishPerSecond.toFixed(2)} unit="FPS" />
+                <StatItem 
+                  icon={HelpCircle} 
+                  label="Global Income Multiplier" 
+                  value={`${((effectiveGlobalRateMultiplier -1)*100).toFixed(0)}% Bonus`} 
+                  description={`Base: ${((globalRateMultiplier-1)*100).toFixed(0)}%, Market Surge: ${isMarketAnalysisActive ? `x${marketAnalysisGlobalUpgrade?.effects?.marketAnalysisMultiplier ?? 1}` : 'Inactive'}`} 
+                />
               </div>
             </section>
 
-            {/* Crew Breakdown */}
             <section>
               <h3 className="text-xl font-semibold mb-2 text-primary flex items-center"><Users className="mr-2" />Crew Breakdown</h3>
               <div className="space-y-3">
                 {fishermanTypesData.map(ft => {
                   const state = ownedFishermanTypes[ft.id] || { quantity: 0, level: 1 };
-                  const crewRatePerUnit = ft.baseRate * state.level * effectiveGlobalRateMultiplier;
-                  const totalCrewRate = crewRatePerUnit * state.quantity;
+                  const timerState = fishermanTimers[ft.id];
                   const IconComp = ft.icon;
+
+                  const collectionAmount = state.quantity > 0 ? ft.baseCollectionAmount * state.level * effectiveGlobalRateMultiplier : 0;
+                  const collectionInterval = timerState && timerState.currentIntervalMs !== Infinity ? (timerState.currentIntervalMs / 1000) : (ft.baseCollectionTimeMs / 1000);
+                  const avgFpsForType = (timerState && timerState.currentIntervalMs > 0 && timerState.currentIntervalMs !== Infinity && state.quantity > 0) 
+                                        ? collectionAmount / collectionInterval
+                                        : 0;
+                  
+                  if (state.quantity === 0) {
+                    return (
+                       <div key={ft.id} className="bg-card p-3 rounded-md shadow-sm opacity-70">
+                        <h4 className="font-semibold text-lg mb-1 flex items-center"><IconComp className="mr-2 h-5 w-5" />{ft.name} (Not Hired)</h4>
+                        <StatItem label="Base Collection Amount" value={ft.baseCollectionAmount} unit="fish" />
+                         <StatItem label="Base Collection Interval" value={(ft.baseCollectionTimeMs / 1000).toFixed(1)} unit="sec (for 1 unit)" />
+                      </div>
+                    );
+                  }
+
                   return (
                     <div key={ft.id} className="bg-card p-3 rounded-md shadow-sm">
                       <h4 className="font-semibold text-lg mb-1 flex items-center"><IconComp className="mr-2 h-5 w-5" />{ft.name}</h4>
                       <StatItem label="Quantity" value={state.quantity} />
                       <StatItem label="Level" value={state.level} />
-                      <StatItem label="Fish/sec per unit" value={crewRatePerUnit.toFixed(2)} />
-                      <StatItem label="Total Fish/sec for type" value={totalCrewRate.toFixed(2)} />
+                      <StatItem icon={FishIcon} label="Collects" value={collectionAmount.toFixed(1)} unit="fish" />
+                      <StatItem icon={TimerIcon} label="Interval" value={collectionInterval.toFixed(1)} unit="sec" />
+                      <StatItem icon={TrendingUp} label="Avg. Fish/sec for type" value={avgFpsForType.toFixed(2)} />
                     </div>
                   );
                 })}
               </div>
             </section>
 
-            {/* Minigame Stats */}
             <section>
               <h3 className="text-xl font-semibold mb-2 text-primary flex items-center"><Crosshair className="mr-2" />Minigame Stats</h3>
               <div className="bg-card p-3 rounded-md shadow-sm space-y-2">
@@ -196,11 +222,9 @@ export function GameStatisticsModal({
               </div>
             </section>
 
-            {/* Global Effects */}
             <section>
               <h3 className="text-xl font-semibold mb-2 text-primary flex items-center"><Settings2 className="mr-2" />Global Effects</h3>
               <div className="space-y-3">
-                {/* Booster Bait */}
                 {purchasedUpgrades['booster_bait'] && boosterBaitGlobalUpgrade && (
                   <div className="bg-card p-3 rounded-md shadow-sm">
                     <h4 className="font-semibold text-lg mb-1 flex items-center"><Flame className="mr-2 h-5 w-5" />Booster Bait</h4>
@@ -212,7 +236,6 @@ export function GameStatisticsModal({
                   </div>
                 )}
 
-                {/* Automated Trawling Net */}
                 {purchasedUpgrades['automated_trawling_net'] && autoNetGlobalUpgrade && (
                   <div className="bg-card p-3 rounded-md shadow-sm">
                     <h4 className="font-semibold text-lg mb-1 flex items-center"><Anchor className="mr-2 h-5 w-5" />Automated Trawling Net</h4>
@@ -223,7 +246,6 @@ export function GameStatisticsModal({
                   </div>
                 )}
 
-                {/* Market Analysis */}
                 {purchasedUpgrades['market_analysis'] && marketAnalysisGlobalUpgrade && (
                   <div className="bg-card p-3 rounded-md shadow-sm">
                     <h4 className="font-semibold text-lg mb-1 flex items-center"><BarChart3 className="mr-2 h-5 w-5" />Market Analysis</h4>
@@ -245,5 +267,3 @@ export function GameStatisticsModal({
     </Dialog>
   );
 }
-
-    

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type React from 'react';
@@ -6,10 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface FishDisplayProps {
   fishCount: number;
-  fishPerSecond: number;
+  averageFishPerSecond: number;
 }
 
-export function FishDisplay({ fishCount, fishPerSecond }: FishDisplayProps) {
+export function FishDisplay({ fishCount, averageFishPerSecond }: FishDisplayProps) {
   return (
     <Card className="shadow-lg w-full text-center bg-card/80 backdrop-blur-sm">
       <CardHeader className="pb-2">
@@ -24,7 +25,7 @@ export function FishDisplay({ fishCount, fishPerSecond }: FishDisplayProps) {
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <TrendingUp className="mr-1 h-4 w-4" />
-          {fishPerSecond.toFixed(1)} fish/sec
+          Avg. {averageFishPerSecond.toFixed(1)} fish/sec
         </div>
       </CardContent>
     </Card>

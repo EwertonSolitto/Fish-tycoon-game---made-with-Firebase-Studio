@@ -5,7 +5,7 @@ import type React from 'react';
 import type { FishermanType } from '@/config/gameData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, UserPlus, ArrowUpCircle, Activity, TrendingUp, Users2Icon } from 'lucide-react';
+import { DollarSign, UserPlus, ArrowUpCircle, Activity, TrendingUp, Users2Icon, TimerIcon, FishIcon as CollectionIcon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 interface HireableFishermanCardProps {
@@ -19,7 +19,8 @@ interface HireableFishermanCardProps {
   currentCrewUpgradeCost: number;
   onUpgrade: (typeId: string) => void;
   canAffordCrewUpgrade: boolean;
-  globalRateMultiplier: number;
+  collectionAmount: number; // Amount collected per cycle for this crew type (factoring level and global multipliers)
+  collectionIntervalSeconds: number; // Current collection interval in seconds for this crew type
 }
 
 export function HireableFishermanCard({ 
@@ -32,12 +33,19 @@ export function HireableFishermanCard({
   currentCrewUpgradeCost,
   onUpgrade,
   canAffordCrewUpgrade,
-  globalRateMultiplier
+  collectionAmount,
+  collectionIntervalSeconds
 }: HireableFishermanCardProps) {
   const IconComponent = fishermanType.icon;
-  const totalRateForType = ownedQuantity > 0 
-    ? fishermanType.baseRate * currentLevel * globalRateMultiplier * ownedQuantity 
-    : 0;
+  
+  const displayInterval = collectionIntervalSeconds === Infinity || ownedQuantity === 0 
+    ? fishermanType.baseCollectionTimeMs / 1000 
+    : collectionIntervalSeconds;
+
+  const displayAmount = ownedQuantity === 0 
+    ? fishermanType.baseCollectionAmount // Show base amount if none owned
+    : collectionAmount;
+
 
   return (
     <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 flex flex-col justify-between">
@@ -55,7 +63,10 @@ export function HireableFishermanCard({
               <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Cost to Hire: {Math.ceil(currentHireCost).toLocaleString('en-US')} fish
             </p>
             <p className="text-sm text-muted-foreground flex items-center">
-              <TrendingUp className="h-4 w-4 mr-1" /> Base Rate: {fishermanType.baseRate.toFixed(1)} fish/sec (at Lvl 1)
+              <CollectionIcon className="h-4 w-4 mr-1" /> Base Collection: {fishermanType.baseCollectionAmount} fish 
+            </p>
+             <p className="text-sm text-muted-foreground flex items-center">
+              <TimerIcon className="h-4 w-4 mr-1" /> Base Interval: {(fishermanType.baseCollectionTimeMs / 1000).toFixed(1)}s (for 1 unit)
             </p>
           </div>
 
@@ -65,9 +76,16 @@ export function HireableFishermanCard({
               <p className="text-sm font-semibold flex items-center">
                 <Users2Icon className="h-4 w-4 mr-1 text-muted-foreground" /> Owned: {ownedQuantity} (Level {currentLevel})
               </p>
-              <p className="text-sm font-medium flex items-center">
-                <Activity className="h-4 w-4 mr-1 text-muted-foreground" /> Crew Rate: {totalRateForType.toFixed(2)} fish/sec
-              </p>
+              {ownedQuantity > 0 && (
+                 <>
+                  <p className="text-sm font-medium flex items-center">
+                    <Activity className="h-4 w-4 mr-1 text-muted-foreground" /> Collects: {displayAmount.toFixed(1)} fish
+                  </p>
+                  <p className="text-sm font-medium flex items-center">
+                    <TimerIcon className="h-4 w-4 mr-1 text-muted-foreground" /> Every: {displayInterval.toFixed(1)} seconds
+                  </p>
+                 </>
+              )}
               <p className="text-sm font-medium flex items-center">
                 <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Upgrade Cost: {Math.ceil(currentCrewUpgradeCost).toLocaleString('en-US')} fish
               </p>
@@ -87,7 +105,7 @@ export function HireableFishermanCard({
         </Button>
         <Button 
           onClick={() => onUpgrade(fishermanType.id)} 
-          disabled={!canAffordCrewUpgrade} // This will be false if ownedQuantity is 0 or if fish < cost
+          disabled={!canAffordCrewUpgrade}
           variant="secondary"
           className="w-full"
           aria-label={`Upgrade ${fishermanType.name} crew to level ${currentLevel + 1}`}
