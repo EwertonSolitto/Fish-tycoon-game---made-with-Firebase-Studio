@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, Zap, CheckCircle2, TrendingUp, ShieldCheck, Info } from 'lucide-react';
+import { formatNumber } from '@/lib/utils';
 
 interface MinigameUpgradeCardProps {
   upgrade: MinigameUpgradeData;
@@ -75,8 +76,8 @@ export function MinigameUpgradeCard({
       nextLevelEffectDescription = `+${(upgrade.effect.value / 1000).toFixed(1)}s Lifetime`;
       break;
     case 'value':
-      currentBonusDescription = `${gameStats.minigameFishValue} Fish Value`;
-      nextLevelEffectDescription = `+${upgrade.effect.value} Fish Value`;
+      currentBonusDescription = `${formatNumber(gameStats.minigameFishValue)} Fish Value`;
+      nextLevelEffectDescription = `+${formatNumber(upgrade.effect.value)} Fish Value`;
       break;
     case 'criticalChance':
       currentBonusDescription = `${formatPercentage(gameStats.criticalFishChance)} Crit Chance`;
@@ -97,14 +98,14 @@ export function MinigameUpgradeCard({
       nextLevelEffectDescription = `+${(upgrade.effect.value / 1000).toFixed(1)}s Duration`;
       break;
     case 'autoNetCatchAmount':
-        currentBonusDescription = `${gameStats.autoNetCatchAmount} Fish per Net Haul`;
-        nextLevelEffectDescription = `+${upgrade.effect.value} Fish per Haul`;
+        currentBonusDescription = `${formatNumber(gameStats.autoNetCatchAmount)} Fish per Net Haul`;
+        nextLevelEffectDescription = `+${formatNumber(upgrade.effect.value)} Fish per Haul`;
         break;
     default:
       // Fallback for unknown types
       const currentTotalValueGeneric = (INITIAL_MINIGAME_MAX_FISH + (currentLevel -1) * upgrade.effect.value); // Example fallback
-      currentBonusDescription = `Current: ${currentTotalValueGeneric.toFixed(1)}`;
-      nextLevelEffectDescription = `Adds +${upgrade.effect.value.toFixed(1)}`;
+      currentBonusDescription = `Current: ${formatNumber(currentTotalValueGeneric)}`;
+      nextLevelEffectDescription = `Adds +${formatNumber(upgrade.effect.value)}`;
   }
 
 
@@ -132,7 +133,7 @@ export function MinigameUpgradeCard({
                 <Info className="h-4 w-4 mr-1 text-muted-foreground" /> Next Upgrade: {nextLevelEffectDescription}
               </p>
               <p className="text-sm font-medium flex items-center">
-                <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Upgrade Cost: {Math.ceil(nextCost).toLocaleString('en-US')} fish
+                <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Upgrade Cost: {formatNumber(nextCost)} fish
               </p>
             </>
           )}

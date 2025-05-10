@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { DollarSign, UserPlus, ArrowUpCircle, Activity, TimerIcon, FishIcon as CollectionIcon, Users2Icon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { FloatingNumber } from './FloatingNumber'; // Assuming FloatingNumber can be used/adapted
+import { formatNumber } from '@/lib/utils';
 
 interface HireableFishermanCardProps {
   fishermanType: FishermanType;
@@ -113,7 +114,7 @@ export function HireableFishermanCard({
               <Users2Icon className="h-4 w-4 mr-1 text-muted-foreground" /> Owned: {ownedQuantity} (Level {currentLevel})
             </p>
              <p className="text-sm text-muted-foreground flex items-center">
-              <CollectionIcon className="h-4 w-4 mr-1" /> Collects: {displayAmount.toFixed(1)} fish 
+              <CollectionIcon className="h-4 w-4 mr-1" /> Collects: {formatNumber(displayAmount)} fish 
             </p>
              <p className="text-sm text-muted-foreground flex items-center">
               <TimerIcon className="h-4 w-4 mr-1" /> Interval: {displayInterval.toFixed(1)}s 
@@ -125,10 +126,10 @@ export function HireableFishermanCard({
           
           <div>
             <p className="text-sm font-medium flex items-center">
-              <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Cost to Hire: {Math.ceil(currentHireCost).toLocaleString('en-US')} fish
+              <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Cost to Hire: {formatNumber(currentHireCost)} fish
             </p>
             <p className="text-sm font-medium flex items-center">
-              <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Upgrade Cost: {Math.ceil(currentCrewUpgradeCost).toLocaleString('en-US')} fish
+              <DollarSign className="h-4 w-4 mr-1 text-muted-foreground" /> Upgrade Cost: {formatNumber(currentCrewUpgradeCost)} fish
             </p>
            
           </div>

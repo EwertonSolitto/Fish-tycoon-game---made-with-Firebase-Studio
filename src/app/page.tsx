@@ -36,6 +36,7 @@ import {
   MAX_OFFLINE_PROGRESS_MS,
   GLOBAL_MIN_COLLECTION_TIME_MS,
 } from '@/config/gameData';
+import { formatNumber } from '@/lib/utils';
 import { RotateCcw } from 'lucide-react';
 import { ClickableFishGame } from '@/components/game/ClickableFishGame';
 import {
@@ -193,7 +194,7 @@ export default function FishWorldTycoonPage() {
     if (loadedState) {
       setFish((loadedState.fish ?? INITIAL_FISH_COUNT) + offlineFishGains);
       if (offlineFishGains > 0) {
-        toast({ title: "Welcome Back!", description: `You gathered ${Math.floor(offlineFishGains)} fish while away!`, variant: 'default' });
+        toast({ title: "Welcome Back!", description: `You gathered ${formatNumber(offlineFishGains)} fish while away!`, variant: 'default' });
       }
       setPurchasedUpgrades(loadedState.purchasedUpgrades ?? {});
       setGlobalRateMultiplier(loadedState.globalRateMultiplier ?? 1);
@@ -477,7 +478,7 @@ export default function FishWorldTycoonPage() {
 
       toast({ title: "Fisherman Hired!", description: `You hired a ${fishermanType.name}.`, variant: "default" });
     } else {
-      toast({ title: "Not enough fish!", description: `You need ${Math.ceil(cost).toLocaleString('en-US')} fish.`, variant: "destructive" });
+      toast({ title: "Not enough fish!", description: `You need ${formatNumber(cost)} fish.`, variant: "destructive" });
     }
   };
 
@@ -501,7 +502,7 @@ export default function FishWorldTycoonPage() {
       // Interval does not change on upgrade, only collection amount
       toast({ title: `${fishermanType.name} Crew Upgraded!`, description: `Level ${currentTypeState.level + 1}. Their catch per cycle has doubled!`, variant: "default" });
     } else {
-      toast({ title: "Not enough fish!", description: `You need ${Math.ceil(crewUpgradeCost).toLocaleString('en-US')} fish.`, variant: "destructive" });
+      toast({ title: "Not enough fish!", description: `You need ${formatNumber(crewUpgradeCost)} fish.`, variant: "destructive" });
     }
   };
 
@@ -520,7 +521,7 @@ export default function FishWorldTycoonPage() {
 
       toast({ title: "Upgrade Purchased!", description: `${upgradeData.name} active.`, variant: "default" });
     } else {
-      toast({ title: "Not enough fish!", description: `Need ${upgradeData.cost.toLocaleString('en-US')} fish.`, variant: "destructive" });
+      toast({ title: "Not enough fish!", description: `Need ${formatNumber(upgradeData.cost)} fish.`, variant: "destructive" });
     }
   };
 
@@ -553,7 +554,7 @@ export default function FishWorldTycoonPage() {
       }
       toast({ title: "Minigame Upgrade!", description: `${upgradeData.name} Lvl ${newLevel}.`, variant: "default" });
     } else {
-      toast({ title: "Not enough fish!", description: `Need ${cost.toLocaleString('en-US')} fish.`, variant: "destructive" });
+      toast({ title: "Not enough fish!", description: `Need ${formatNumber(cost)} fish.`, variant: "destructive" });
     }
   };
   
@@ -594,7 +595,7 @@ export default function FishWorldTycoonPage() {
         const valuePerCatch = minigameFishValue; 
         setFish(prev => prev + (fishToCatch * valuePerCatch));
         if (fishToCatch > 0) {
-             toast({ title: "Net Haul!", description: `Automated net caught ${fishToCatch * valuePerCatch} fish.`, variant: "default" });
+             toast({ title: "Net Haul!", description: `Automated net caught ${formatNumber(fishToCatch * valuePerCatch)} fish.`, variant: "default" });
         }
       }, interval);
     }

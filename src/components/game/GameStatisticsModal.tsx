@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChartHorizontalBig, Users, Ship, Briefcase, Settings2, Zap, PackagePlusIcon, Flame, Anchor, BarChart3, FishIcon, TrendingUp, Percent, Clock, Maximize, Hourglass, Crosshair, HelpCircle, TimerIcon, RotateCcw } from 'lucide-react';
 import type { FishermanType, GlobalUpgradeData } from '@/config/gameData';
+import { formatNumber } from '@/lib/utils';
 
 interface FishermanTypeState {
   quantity: number;
@@ -170,8 +171,8 @@ export function GameStatisticsModal({
             <section>
               <h3 className="text-xl font-semibold mb-2 text-primary flex items-center"><FishIcon className="mr-2" />Overall</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 bg-card p-3 rounded-md shadow-sm">
-                <StatItem icon={FishIcon} label="Total Fish" value={Math.floor(totalFish)} />
-                <StatItem icon={TrendingUp} label="Avg. Total Fish/sec" value={averageTotalFishPerSecond.toFixed(2)} unit="FPS" />
+                <StatItem icon={FishIcon} label="Total Fish" value={formatNumber(totalFish)} />
+                <StatItem icon={TrendingUp} label="Avg. Total Fish/sec" value={formatNumber(averageTotalFishPerSecond)} unit="FPS" />
                 <StatItem 
                   icon={HelpCircle} 
                   label="Global Income Multiplier" 
@@ -199,7 +200,7 @@ export function GameStatisticsModal({
                     return (
                        <div key={ft.id} className="bg-card p-3 rounded-md shadow-sm opacity-70">
                         <h4 className="font-semibold text-lg mb-1 flex items-center"><IconComp className="mr-2 h-5 w-5" />{ft.name} (Not Hired)</h4>
-                        <StatItem label="Base Collection Amount (Lvl 1)" value={ft.baseCollectionAmount * Math.pow(2,0)} unit="fish" />
+                        <StatItem label="Base Collection Amount (Lvl 1)" value={formatNumber(ft.baseCollectionAmount * Math.pow(2,0))} unit="fish" />
                          <StatItem label="Base Collection Interval" value={(ft.baseCollectionTimeMs / 1000).toFixed(1)} unit="sec (for 1 unit)" />
                       </div>
                     );
@@ -210,9 +211,9 @@ export function GameStatisticsModal({
                       <h4 className="font-semibold text-lg mb-1 flex items-center"><IconComp className="mr-2 h-5 w-5" />{ft.name}</h4>
                       <StatItem label="Quantity" value={state.quantity} />
                       <StatItem label="Level" value={state.level} />
-                      <StatItem icon={FishIcon} label="Collects" value={collectionAmountPerCycle.toFixed(1)} unit="fish" />
+                      <StatItem icon={FishIcon} label="Collects" value={formatNumber(collectionAmountPerCycle)} unit="fish" />
                       <StatItem icon={TimerIcon} label="Interval" value={collectionInterval.toFixed(1)} unit="sec" />
-                      <StatItem icon={TrendingUp} label="Avg. Fish/sec for type" value={avgFpsForType.toFixed(2)} />
+                      <StatItem icon={TrendingUp} label="Avg. Fish/sec for type" value={formatNumber(avgFpsForType)} />
                     </div>
                   );
                 })}
@@ -225,14 +226,14 @@ export function GameStatisticsModal({
                  <h4 className="font-semibold text-md mb-1">Current Effective (Includes Boosters)</h4>
                 <StatItem icon={Maximize} label="Max Fish on Screen" value={currentMinigameParams.maxFish} />
                 <StatItem icon={Hourglass} label="Fish Lifetime" value={(currentMinigameParams.lifetime / 1000).toFixed(1)} unit="sec" />
-                <StatItem icon={FishIcon} label="Base Value per Click" value={currentMinigameParams.value} />
+                <StatItem icon={FishIcon} label="Base Value per Click" value={formatNumber(currentMinigameParams.value)} />
                 <StatItem icon={Percent} label="Critical Fish Chance" value={(currentMinigameParams.critChance * 100).toFixed(1)} unit="%" />
                 <StatItem icon={Clock} label="Spawn Interval" value={`${(currentMinigameParams.minSpawnMs / 1000).toFixed(1)} - ${(currentMinigameParams.maxSpawnMs / 1000).toFixed(1)}`} unit="sec" />
 
                 <h4 className="font-semibold text-md mb-1 pt-2 border-t border-border/30">Base Unbuffed</h4>
                 <StatItem icon={Maximize} label="Max Fish on Screen" value={baseMinigameStats.maxFish} />
                 <StatItem icon={Hourglass} label="Fish Lifetime" value={(baseMinigameStats.lifetime / 1000).toFixed(1)} unit="sec" />
-                <StatItem icon={FishIcon} label="Base Value per Click" value={baseMinigameStats.value} />
+                <StatItem icon={FishIcon} label="Base Value per Click" value={formatNumber(baseMinigameStats.value)} />
                 <StatItem icon={Percent} label="Critical Fish Chance" value={(baseMinigameStats.critChance * 100).toFixed(1)} unit="%" />
                 <StatItem icon={Clock} label="Spawn Interval" value={`${(baseMinigameStats.minSpawnMs / 1000).toFixed(1)} - ${(baseMinigameStats.maxSpawnMs / 1000).toFixed(1)}`} unit="sec" />
               </div>
@@ -256,9 +257,9 @@ export function GameStatisticsModal({
                   <div className="bg-card p-3 rounded-md shadow-sm">
                     <h4 className="font-semibold text-lg mb-1 flex items-center"><Anchor className="mr-2 h-5 w-5" />Automated Trawling Net</h4>
                      <StatItem label="Status" value="Active" />
-                    <StatItem label="Fish Caught per Haul" value={autoNetCatchAmount} />
+                    <StatItem label="Fish Caught per Haul" value={formatNumber(autoNetCatchAmount)} />
                     <StatItem label="Interval" value={(autoNetBaseInterval / 1000).toFixed(1)} unit="sec" />
-                    <StatItem label="Value per Haul" value={autoNetCatchAmount * currentMinigameParams.value} unit="fish" />
+                    <StatItem label="Value per Haul" value={formatNumber(autoNetCatchAmount * currentMinigameParams.value)} unit="fish" />
                   </div>
                 )}
 

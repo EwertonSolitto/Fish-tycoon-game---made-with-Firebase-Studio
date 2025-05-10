@@ -4,6 +4,7 @@
 import type React from 'react';
 import { Fish as FishIcon, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatNumber } from '@/lib/utils';
 
 interface FishDisplayProps {
   fishCount: number;
@@ -21,11 +22,11 @@ export function FishDisplay({ fishCount, averageFishPerSecond }: FishDisplayProp
       <CardContent className="flex flex-col items-center space-y-2">
         <div className="flex items-center text-5xl font-extrabold text-primary">
           <FishIcon className="mr-3 h-12 w-12" aria-hidden="true" />
-          {Math.floor(fishCount).toLocaleString('en-US')}
+          {formatNumber(fishCount)}
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <TrendingUp className="mr-1 h-4 w-4" />
-          Avg. {averageFishPerSecond.toFixed(1)} fish/sec
+          Avg. {formatNumber(averageFishPerSecond)} fish/sec
         </div>
       </CardContent>
     </Card>
