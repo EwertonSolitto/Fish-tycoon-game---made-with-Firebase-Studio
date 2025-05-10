@@ -81,6 +81,7 @@ interface GameStatisticsModalProps {
   fishermanTimers: Record<string, FishermanTimerState>; 
   globalRateMultiplier: number;
   effectiveGlobalRateMultiplier: number;
+  calculateCollectionAmount: (fishermanType: FishermanType, typeState: FishermanTypeState, currentEffectiveGlobalRateMultiplier: number) => number;
   currentMinigameParams: CurrentMinigameParams;
   baseMinigameStats: BaseMinigameStats;
   isBoosterActive: boolean;
@@ -130,6 +131,7 @@ export function GameStatisticsModal({
   fishermanTimers,
   globalRateMultiplier,
   effectiveGlobalRateMultiplier,
+  calculateCollectionAmount,
   currentMinigameParams,
   baseMinigameStats,
   isBoosterActive,
@@ -187,17 +189,17 @@ export function GameStatisticsModal({
                   const timerState = fishermanTimers[ft.id];
                   const IconComp = ft.icon;
 
-                  const collectionAmount = state.quantity > 0 ? ft.baseCollectionAmount * state.level * effectiveGlobalRateMultiplier : 0;
+                  const collectionAmountPerCycle = state.quantity > 0 ? calculateCollectionAmount(ft, state, effectiveGlobalRateMultiplier) : 0;
                   const collectionInterval = timerState && timerState.currentIntervalMs !== Infinity ? (timerState.currentIntervalMs / 1000) : (ft.baseCollectionTimeMs / 1000);
                   const avgFpsForType = (timerState && timerState.currentIntervalMs > 0 && timerState.currentIntervalMs !== Infinity && state.quantity > 0) 
-                                        ? collectionAmount / collectionInterval
+                                        ? collectionAmountPerCycle / collectionInterval
                                         : 0;
                   
                   if (state.quantity === 0) {
                     return (
                        <div key={ft.id} className="bg-card p-3 rounded-md shadow-sm opacity-70">
                         <h4 className="font-semibold text-lg mb-1 flex items-center"><IconComp className="mr-2 h-5 w-5" />{ft.name} (Not Hired)</h4>
-                        <StatItem label="Base Collection Amount" value={ft.baseCollectionAmount} unit="fish" />
+                        <StatItem label="Base Collection Amount (Lvl 1)" value={ft.baseCollectionAmount * Math.pow(2,0)} unit="fish" />
                          <StatItem label="Base Collection Interval" value={(ft.baseCollectionTimeMs / 1000).toFixed(1)} unit="sec (for 1 unit)" />
                       </div>
                     );
@@ -208,7 +210,7 @@ export function GameStatisticsModal({
                       <h4 className="font-semibold text-lg mb-1 flex items-center"><IconComp className="mr-2 h-5 w-5" />{ft.name}</h4>
                       <StatItem label="Quantity" value={state.quantity} />
                       <StatItem label="Level" value={state.level} />
-                      <StatItem icon={FishIcon} label="Collects" value={collectionAmount.toFixed(1)} unit="fish" />
+                      <StatItem icon={FishIcon} label="Collects" value={collectionAmountPerCycle.toFixed(1)} unit="fish" />
                       <StatItem icon={TimerIcon} label="Interval" value={collectionInterval.toFixed(1)} unit="sec" />
                       <StatItem icon={TrendingUp} label="Avg. Fish/sec for type" value={avgFpsForType.toFixed(2)} />
                     </div>

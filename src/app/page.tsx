@@ -34,6 +34,7 @@ import {
   DEFAULT_MARKET_ANALYSIS_DURATION_MS,
   DEFAULT_MARKET_ANALYSIS_MULTIPLIER,
   MAX_OFFLINE_PROGRESS_MS,
+  GLOBAL_MIN_COLLECTION_TIME_MS, // New import
 } from '@/config/gameData';
 import { RotateCcw } from 'lucide-react';
 import { ClickableFishGame } from '@/components/game/ClickableFishGame';
@@ -44,7 +45,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const LOCAL_STORAGE_KEY = 'fishWorldTycoonSaveData_v3'; // Incremented version for new structure
+const LOCAL_STORAGE_KEY = 'fishWorldTycoonSaveData_v3'; 
 
 interface FishermanTypeState {
   quantity: number;
@@ -83,6 +84,11 @@ interface SavedGameState {
   lastSaveTimestamp: number;
 }
 
+interface FishCollectionNotifier {
+    amount: number;
+    key: string; // Unique key to trigger useEffect in child, e.g., `${typeId}-${timestamp}-${Math.random()}`
+}
+
 export default function FishWorldTycoonPage() {
   const [fish, setFish] = useState<number>(INITIAL_FISH_COUNT);
   const [ownedFishermanTypes, setOwnedFishermanTypes] = useState<Record<string, FishermanTypeState>>({});
@@ -115,6 +121,8 @@ export default function FishWorldTycoonPage() {
   const marketAnalysisGlobalUpgrade = useMemo(() => GLOBAL_UPGRADES_DATA.find(up => up.id === 'market_analysis'), []);
 
   const [fishermanTimers, setFishermanTimers] = useState<Record<string, FishermanTimerState>>({});
+  const [fishCollectionNotifiers, setFishCollectionNotifiers] = useState<Record<string, FishCollectionNotifier | undefined>>({});
+
 
   const { toast } = useToast();
 
@@ -124,8 +132,17 @@ export default function FishWorldTycoonPage() {
 
   const calculateFishermanInterval = useCallback((type: FishermanType, quantity: number): number => {
     if (quantity === 0) return Infinity;
-    return Math.max(type.baseCollectionTimeMs / quantity, type.minCollectionTimeMs);
+    const quantityScaledInterval = type.baseCollectionTimeMs / quantity;
+    // Interval cannot be faster than type's minCollectionTimeMs, nor faster than global minimum
+    return Math.max(GLOBAL_MIN_COLLECTION_TIME_MS, Math.max(quantityScaledInterval, type.minCollectionTimeMs));
   }, []);
+  
+  const calculateCollectionAmount = useCallback((fishermanType: FishermanType, typeState: FishermanTypeState, currentEffectiveGlobalRateMultiplier: number) => {
+    const baseAmount = fishermanType.baseCollectionAmount;
+    const levelMultiplier = Math.pow(2, typeState.level - 1); // Level 1 = 2^0=1, Level 2 = 2^1=2, Level 3 = 2^2=4, etc.
+    return baseAmount * levelMultiplier * currentEffectiveGlobalRateMultiplier;
+  }, []);
+
 
   const initializeGameState = useCallback((forceReset = false) => {
     let loadedState: SavedGameState | null = null;
@@ -154,9 +171,7 @@ export default function FishWorldTycoonPage() {
             if (typeData && ownedTypeState && ownedTypeState.quantity > 0 && timerInfo && timerInfo.currentIntervalMs > 0 && timerInfo.currentIntervalMs !== Infinity) {
                 const collectionsMissed = Math.floor(effectiveOfflineMs / timerInfo.currentIntervalMs);
                 if (collectionsMissed > 0) {
-                    const fishPerCollection = typeData.baseCollectionAmount * 
-                                              ownedTypeState.level * 
-                                              (loadedState.globalRateMultiplier ?? 1); // Use saved globalRateMultiplier for offline calc
+                     const fishPerCollection = calculateCollectionAmount(typeData, ownedTypeState, (loadedState.globalRateMultiplier ?? 1));
                     offlineFishGains += collectionsMissed * fishPerCollection;
                 }
             }
@@ -214,7 +229,7 @@ export default function FishWorldTycoonPage() {
                         const timeIntoThisCycleAfterOffline = (timeSinceSave - timeRemainingInCycleAtSave) % calculatedInterval;
                         nextTimestamp = Date.now() + (calculatedInterval - timeIntoThisCycleAfterOffline);
                     }
-                     if (nextTimestamp <= Date.now() + 100) { // Ensure not too soon
+                     if (nextTimestamp <= Date.now() + 100) { 
                         nextTimestamp = Date.now() + Math.max(100, calculatedInterval);
                     }
                 }
@@ -224,7 +239,7 @@ export default function FishWorldTycoonPage() {
                 };
             }
         }
-      } else { // if no saved timers, initialize them for any loaded fisherman
+      } else { 
         FISHERMAN_TYPES.forEach(ft => {
           const currentOwned = loadedOwnedTypes[ft.id];
           if (currentOwned && currentOwned.quantity > 0) {
@@ -260,7 +275,7 @@ export default function FishWorldTycoonPage() {
       });
       setNextFishermanCosts(initialFishermanCosts);
       setOwnedFishermanTypes(initialOwnedFishermanTypes);
-      setFishermanTimers({}); // No timers initially
+      setFishermanTimers({}); 
 
       setMinigameMaxFish(INITIAL_MINIGAME_MAX_FISH);
       setMinigameFishLifetime(INITIAL_MINIGAME_FISH_LIFETIME_MS);
@@ -283,7 +298,7 @@ export default function FishWorldTycoonPage() {
       setMinigameUpgradeLevels(initialMinigameUpgradeLevels);
       setNextMinigameUpgradeCosts(initialMinigameUpgradeCosts);
     }
-  }, [autoNetGlobalUpgrade, toast, calculateFishermanInterval]);
+  }, [autoNetGlobalUpgrade, toast, calculateFishermanInterval, calculateCollectionAmount]);
 
   useEffect(() => {
     initializeGameState();
@@ -292,7 +307,6 @@ export default function FishWorldTycoonPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
        if (Object.keys(ownedFishermanTypes).length === 0 && fish === INITIAL_FISH_COUNT && Object.keys(nextFishermanCosts).length === 0) {
-         // Skip save if potentially not fully initialized early on
          return;
       }
 
@@ -330,13 +344,13 @@ export default function FishWorldTycoonPage() {
     fishermanTimers
   ]);
   
-  // Game loop for crew collections
   useEffect(() => {
     const gameLoopIntervalId = setInterval(() => {
       const now = Date.now();
       let fishCollectedThisTick = 0;
       const newTimersState = { ...fishermanTimers };
       let timersUpdated = false;
+      const newNotifiers: Record<string, FishCollectionNotifier | undefined> = { ...fishCollectionNotifiers };
 
       for (const typeId in ownedFishermanTypes) {
         const typeState = ownedFishermanTypes[typeId];
@@ -345,12 +359,16 @@ export default function FishWorldTycoonPage() {
           const timerState = fishermanTimers[typeId];
 
           if (fishermanType && timerState && now >= timerState.nextCollectionTimestamp) {
-            const amountCollected = fishermanType.baseCollectionAmount * typeState.level * effectiveGlobalRateMultiplier;
-            fishCollectedThisTick += amountCollected;
+            const amountCollectedForType = calculateCollectionAmount(fishermanType, typeState, effectiveGlobalRateMultiplier);
+            fishCollectedThisTick += amountCollectedForType;
             
             newTimersState[typeId] = {
               ...timerState,
               nextCollectionTimestamp: now + timerState.currentIntervalMs,
+            };
+            newNotifiers[typeId] = {
+                amount: Math.floor(amountCollectedForType),
+                key: `${typeId}-${now}-${Math.random()}`
             };
             timersUpdated = true;
           }
@@ -362,11 +380,12 @@ export default function FishWorldTycoonPage() {
       }
       if (timersUpdated) {
         setFishermanTimers(newTimersState);
+        setFishCollectionNotifiers(newNotifiers);
       }
     }, GAME_TICK_INTERVAL_MS);
 
     return () => clearInterval(gameLoopIntervalId);
-  }, [ownedFishermanTypes, fishermanTimers, effectiveGlobalRateMultiplier, setFish]);
+  }, [ownedFishermanTypes, fishermanTimers, effectiveGlobalRateMultiplier, calculateCollectionAmount, fishCollectionNotifiers]);
 
 
   const averageTotalFishPerSecond = useMemo(() => {
@@ -376,12 +395,12 @@ export default function FishWorldTycoonPage() {
         const fishermanType = FISHERMAN_TYPES.find(ft => ft.id === typeId);
         const timerState = fishermanTimers[typeId];
         if (typeState.quantity > 0 && fishermanType && timerState && timerState.currentIntervalMs > 0 && timerState.currentIntervalMs !== Infinity) {
-            const amountPerCollection = fishermanType.baseCollectionAmount * typeState.level * effectiveGlobalRateMultiplier;
+            const amountPerCollection = calculateCollectionAmount(fishermanType, typeState, effectiveGlobalRateMultiplier);
             totalAverage += amountPerCollection / (timerState.currentIntervalMs / 1000);
         }
     }
     return totalAverage;
-  }, [ownedFishermanTypes, fishermanTimers, effectiveGlobalRateMultiplier]);
+  }, [ownedFishermanTypes, fishermanTimers, effectiveGlobalRateMultiplier, calculateCollectionAmount]);
   
   useEffect(() => {
     let marketAnalysisIntervalId: NodeJS.Timeout | undefined;
@@ -454,11 +473,21 @@ export default function FishWorldTycoonPage() {
     const fishermanType = FISHERMAN_TYPES.find(ft => ft.id === typeId);
     const currentTypeState = ownedFishermanTypes[typeId];
     if (!fishermanType || !currentTypeState || currentTypeState.quantity === 0) return;
+    
     const crewUpgradeCost = currentTypeState.currentCrewUpgradeCost;
+
     if (fish >= crewUpgradeCost) {
       setFish(prevFish => prevFish - crewUpgradeCost);
-      setOwnedFishermanTypes(prevTypes => ({ ...prevTypes, [typeId]: { ...currentTypeState, level: currentTypeState.level + 1, currentCrewUpgradeCost: Math.ceil(currentTypeState.currentCrewUpgradeCost * fishermanType.upgradeCostIncreaseFactor) } }));
-      toast({ title: `${fishermanType.name} Crew Upgraded!`, description: `Level ${currentTypeState.level + 1}.`, variant: "default" });
+      setOwnedFishermanTypes(prevTypes => ({ 
+        ...prevTypes, 
+        [typeId]: { 
+          ...currentTypeState, 
+          level: currentTypeState.level + 1, 
+          currentCrewUpgradeCost: Math.ceil(currentTypeState.currentCrewUpgradeCost * fishermanType.upgradeCostIncreaseFactor) 
+        } 
+      }));
+      // Interval does not change on upgrade, only collection amount
+      toast({ title: `${fishermanType.name} Crew Upgraded!`, description: `Level ${currentTypeState.level + 1}. Their catch per cycle has doubled!`, variant: "default" });
     } else {
       toast({ title: "Not enough fish!", description: `You need ${Math.ceil(crewUpgradeCost).toLocaleString('en-US')} fish.`, variant: "destructive" });
     }
@@ -618,6 +647,7 @@ export default function FishWorldTycoonPage() {
     fishermanTimers: fishermanTimers,
     globalRateMultiplier: globalRateMultiplier,
     effectiveGlobalRateMultiplier: effectiveGlobalRateMultiplier,
+    calculateCollectionAmount: calculateCollectionAmount, // Pass this down
     currentMinigameParams: currentMinigameParams,
     baseMinigameStats:{
       maxFish: minigameMaxFish,
@@ -669,10 +699,6 @@ export default function FishWorldTycoonPage() {
             Fish World Tycoon
           </h1>
           <FishDisplay fishCount={fish} averageFishPerSecond={averageTotalFishPerSecond} />
-          {/* Stats Button for Desktop */}
-          <div className="w-full hidden md:flex justify-center md:justify-start mt-2">
-            <GameStatisticsModal {...gameStatsModalProps} />
-          </div>
           {isBoosterActive && <p className="text-center md:text-left text-lg font-semibold text-primary animate-pulse">BOOSTER ACTIVE!</p>}
           {isMarketAnalysisActive && <p className="text-center md:text-left text-lg font-semibold text-accent animate-pulse">MARKET SURGE! (x2 Fish Income)</p>}
         </div>
@@ -689,8 +715,7 @@ export default function FishWorldTycoonPage() {
               maxSpawnIntervalMs={currentMinigameParams.maxSpawnMs}
             />
           </div>
-           {/* Stats Button for Mobile */}
-          <div className="w-full flex md:hidden justify-center mt-4">
+          <div className="w-full flex justify-center mt-4">
             <GameStatisticsModal {...gameStatsModalProps} />
           </div>
         </div>
@@ -709,8 +734,14 @@ export default function FishWorldTycoonPage() {
                   const timerState = fishermanTimers[type.id];
                   const canAffordHire = fish >= (nextFishermanCosts[type.id] || type.initialCost);
                   const canAffordCrewUpgrade = fish >= typeState.currentCrewUpgradeCost && typeState.quantity > 0;
-                  const collectionIntervalSeconds = timerState && timerState.currentIntervalMs !== Infinity ? (timerState.currentIntervalMs / 1000) : (type.baseCollectionTimeMs / 1000);
-                  const collectionAmount = type.baseCollectionAmount * typeState.level * effectiveGlobalRateMultiplier;
+                  
+                  const collectionIntervalSeconds = timerState && timerState.currentIntervalMs !== Infinity 
+                    ? (timerState.currentIntervalMs / 1000) 
+                    : (type.baseCollectionTimeMs / 1000); // Default to base if no timer/quantity
+                  
+                  const currentCollectionAmount = typeState.quantity > 0 
+                    ? calculateCollectionAmount(type, typeState, effectiveGlobalRateMultiplier)
+                    : calculateCollectionAmount(type, {...typeState, quantity: 1, level:1}, effectiveGlobalRateMultiplier); // Show L1, Q1 amount if none owned
 
                   return (
                     <HireableFishermanCard
@@ -724,8 +755,9 @@ export default function FishWorldTycoonPage() {
                       currentCrewUpgradeCost={typeState.currentCrewUpgradeCost}
                       onUpgrade={handleUpgradeFishermanType}
                       canAffordCrewUpgrade={canAffordCrewUpgrade}
-                      collectionAmount={collectionAmount}
+                      collectionAmount={currentCollectionAmount}
                       collectionIntervalSeconds={collectionIntervalSeconds}
+                      collectionNotification={fishCollectionNotifiers[type.id]}
                     />
                   );
                 })}
