@@ -34,7 +34,7 @@ import {
   DEFAULT_MARKET_ANALYSIS_DURATION_MS,
   DEFAULT_MARKET_ANALYSIS_MULTIPLIER,
   MAX_OFFLINE_PROGRESS_MS,
-  GLOBAL_MIN_COLLECTION_TIME_MS, // New import
+  GLOBAL_MIN_COLLECTION_TIME_MS,
 } from '@/config/gameData';
 import { RotateCcw } from 'lucide-react';
 import { ClickableFishGame } from '@/components/game/ClickableFishGame';
@@ -133,8 +133,20 @@ export default function FishWorldTycoonPage() {
   const calculateFishermanInterval = useCallback((type: FishermanType, quantity: number): number => {
     if (quantity === 0) return Infinity;
     const quantityScaledInterval = type.baseCollectionTimeMs / quantity;
-    // Interval cannot be faster than type's minCollectionTimeMs, nor faster than global minimum
-    return Math.max(GLOBAL_MIN_COLLECTION_TIME_MS, Math.max(quantityScaledInterval, type.minCollectionTimeMs));
+    // The interval is primarily determined by quantity scaling,
+    // but it cannot go below the global minimum collection time (0.1s).
+    // A type's specific minCollectionTimeMs is respected if it's lower than quantityScaledInterval but higher than GLOBAL_MIN_COLLECTION_TIME_MS.
+    // However, hiring more crew aims to reach GLOBAL_MIN_COLLECTION_TIME_MS.
+    let effectiveInterval = Math.max(GLOBAL_MIN_COLLECTION_TIME_MS, quantityScaledInterval);
+
+    // If the type has a specific minimum collection time that is greater than the global minimum,
+    // and the quantity-scaled interval is attempting to go below this type-specific minimum,
+    // then the type-specific minimum acts as the cap, unless it's also below global min.
+    // This line is removed to ensure quantity scaling can always aim for GLOBAL_MIN_COLLECTION_TIME_MS.
+    // The original logic was: return Math.max(GLOBAL_MIN_COLLECTION_TIME_MS, Math.max(quantityScaledInterval, type.minCollectionTimeMs));
+    // This would mean type.minCollectionTimeMs (e.g. 2000ms) would cap the interval even if GLOBAL_MIN_COLLECTION_TIME_MS (100ms) is lower.
+    // New logic: Quantity scaling aims for GLOBAL_MIN_COLLECTION_TIME_MS. type.minCollectionTimeMs is a characteristic that might be used by other game mechanics or for display.
+    return effectiveInterval;
   }, []);
   
   const calculateCollectionAmount = useCallback((fishermanType: FishermanType, typeState: FishermanTypeState, currentEffectiveGlobalRateMultiplier: number) => {
@@ -833,3 +845,6 @@ export default function FishWorldTycoonPage() {
     </div>
   );
 }
+
+
+    
