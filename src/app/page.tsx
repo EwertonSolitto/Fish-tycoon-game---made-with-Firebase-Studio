@@ -10,6 +10,7 @@ import { FishDisplay } from '@/components/game/FishDisplay';
 import { HireableFishermanCard } from '@/components/game/HireableFishermanCard';
 import { PurchasableUpgradeCard } from '@/components/game/PurchasableUpgradeCard';
 import { MinigameUpgradeCard } from '@/components/game/MinigameUpgradeCard';
+import { GameStatisticsModal } from '@/components/game/GameStatisticsModal';
 import { 
   FISHERMAN_TYPES, 
   GLOBAL_UPGRADES_DATA, 
@@ -33,7 +34,7 @@ import {
   DEFAULT_MARKET_ANALYSIS_DURATION_MS,
   DEFAULT_MARKET_ANALYSIS_MULTIPLIER
 } from '@/config/gameData';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, BarChartHorizontalBig } from 'lucide-react';
 import { ClickableFishGame } from '@/components/game/ClickableFishGame';
 import {
   Accordion,
@@ -42,7 +43,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const LOCAL_STORAGE_KEY = 'fishWorldTycoonSaveData_v2'; // Incremented version for new state
+const LOCAL_STORAGE_KEY = 'fishWorldTycoonSaveData_v2'; 
 
 interface FishermanTypeState {
   quantity: number;
@@ -57,23 +58,19 @@ interface SavedGameState {
   globalRateMultiplier: number;
   nextFishermanCosts: Record<string, number>;
   
-  // Minigame Core Stats
   minigameMaxFish: number;
   minigameFishLifetime: number;
   minigameFishValue: number;
   minigameUpgradeLevels: Record<string, number>;
   nextMinigameUpgradeCosts: Record<string, number>;
 
-  // New Minigame Stats
   criticalFishChance: number;
   minigameMinSpawnMs: number;
   minigameMaxSpawnMs: number;
 
-  // Booster Bait Stats
   boosterBaitAdditionalChance: number;
   boosterBaitAdditionalDurationMs: number;
 
-  // Automated Netting Stats
   autoNetCatchAmount: number;
 }
 
@@ -84,31 +81,26 @@ export default function FishWorldTycoonPage() {
   const [globalRateMultiplier, setGlobalRateMultiplier] = useState<number>(1);
   const [nextFishermanCosts, setNextFishermanCosts] = useState<Record<string, number>>({});
 
-  // Minigame Core Stats
   const [minigameMaxFish, setMinigameMaxFish] = useState<number>(INITIAL_MINIGAME_MAX_FISH);
   const [minigameFishLifetime, setMinigameFishLifetime] = useState<number>(INITIAL_MINIGAME_FISH_LIFETIME_MS);
   const [minigameFishValue, setMinigameFishValue] = useState<number>(INITIAL_MINIGAME_FISH_VALUE);
   const [minigameUpgradeLevels, setMinigameUpgradeLevels] = useState<Record<string, number>>({});
   const [nextMinigameUpgradeCosts, setNextMinigameUpgradeCosts] = useState<Record<string, number>>({});
 
-  // New Minigame Stats
   const [criticalFishChance, setCriticalFishChance] = useState<number>(INITIAL_CRITICAL_FISH_CHANCE);
   const [minigameMinSpawnMs, setMinigameMinSpawnMs] = useState<number>(INITIAL_MIN_SPAWN_INTERVAL_MS);
   const [minigameMaxSpawnMs, setMinigameMaxSpawnMs] = useState<number>(INITIAL_MAX_SPAWN_INTERVAL_MS);
 
-  // Booster Bait
   const [boosterBaitAdditionalChance, setBoosterBaitAdditionalChance] = useState<number>(0);
   const [boosterBaitAdditionalDurationMs, setBoosterBaitAdditionalDurationMs] = useState<number>(0);
   const [isBoosterActive, setIsBoosterActive] = useState<boolean>(false);
   const [boosterEndTime, setBoosterEndTime] = useState<number | null>(null);
   const boosterBaitGlobalUpgrade = useMemo(() => GLOBAL_UPGRADES_DATA.find(up => up.id === 'booster_bait'), []);
 
-  // Automated Trawling Net
   const [autoNetCatchAmount, setAutoNetCatchAmount] = useState<number>(DEFAULT_AUTO_NET_CATCH_AMOUNT);
   const autoNetGlobalUpgrade = useMemo(() => GLOBAL_UPGRADES_DATA.find(up => up.id === 'automated_trawling_net'), []);
   const autoNetTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Market Analysis
   const [isMarketAnalysisActive, setIsMarketAnalysisActive] = useState<boolean>(false);
   const [marketAnalysisEndTime, setMarketAnalysisEndTime] = useState<number | null>(null);
   const marketAnalysisGlobalUpgrade = useMemo(() => GLOBAL_UPGRADES_DATA.find(up => up.id === 'market_analysis'), []);
@@ -169,7 +161,7 @@ export default function FishWorldTycoonPage() {
       setMinigameUpgradeLevels(loadedState.minigameUpgradeLevels ?? defaultMinigameUpgradeLevels);
       setNextMinigameUpgradeCosts(loadedState.nextMinigameUpgradeCosts ?? defaultMinigameUpgradeCosts);
 
-    } else { // Initialize with defaults
+    } else { 
       setFish(INITIAL_FISH_COUNT);
       setGlobalRateMultiplier(1);
       setPurchasedUpgrades({});
@@ -263,7 +255,6 @@ export default function FishWorldTycoonPage() {
     return total;
   }, [ownedFishermanTypes, effectiveGlobalRateMultiplier]);
   
-  // Market Analysis Activation & Timer
   useEffect(() => {
     let marketAnalysisIntervalId: NodeJS.Timeout | undefined;
     let marketAnalysisTimerId: NodeJS.Timeout | undefined;
@@ -277,7 +268,7 @@ export default function FishWorldTycoonPage() {
           setMarketAnalysisEndTime(Date.now() + marketAnalysisDurationMs);
           toast({ title: "Market Surge!", description: "All fish income doubled for a short time!", variant: "default" });
         }
-      }, 1000); // Check every second
+      }, 1000); 
     }
 
     if (isMarketAnalysisActive && marketAnalysisEndTime) {
@@ -302,7 +293,7 @@ export default function FishWorldTycoonPage() {
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      setFish(prevFish => prevFish + totalFishPerSecond); // totalFishPerSecond already considers market analysis
+      setFish(prevFish => prevFish + totalFishPerSecond); 
     }, GAME_TICK_INTERVAL_MS);
     return () => clearInterval(intervalId);
   }, [totalFishPerSecond]);
@@ -347,7 +338,6 @@ export default function FishWorldTycoonPage() {
       if (upgradeData.rateMultiplierIncrease) {
         setGlobalRateMultiplier(prev => prev * (1 + upgradeData.rateMultiplierIncrease!));
       }
-      // Specific logic for new global upgrades
       if (upgradeId === 'automated_trawling_net' && upgradeData.effects?.autoNetInitialCatchAmount) {
          setAutoNetCatchAmount(upgradeData.effects.autoNetInitialCatchAmount);
       }
@@ -379,7 +369,7 @@ export default function FishWorldTycoonPage() {
         case 'criticalChance': setCriticalFishChance(prev => prev + upgradeData.effect.value); break;
         case 'spawnCooldownReduction':
           setMinigameMinSpawnMs(prev => Math.max(MIN_POSSIBLE_SPAWN_INTERVAL_MS, prev - upgradeData.effect.value));
-          setMinigameMaxSpawnMs(prev => Math.max(MIN_POSSIBLE_SPAWN_INTERVAL_MS + 100, prev - upgradeData.effect.value)); // Ensure max > min
+          setMinigameMaxSpawnMs(prev => Math.max(MIN_POSSIBLE_SPAWN_INTERVAL_MS + 100, prev - upgradeData.effect.value)); 
           break;
         case 'boosterBaitChance': setBoosterBaitAdditionalChance(prev => prev + upgradeData.effect.value); break;
         case 'boosterBaitDuration': setBoosterBaitAdditionalDurationMs(prev => prev + upgradeData.effect.value); break;
@@ -391,7 +381,6 @@ export default function FishWorldTycoonPage() {
     }
   };
   
-  // Booster Bait Activation & Timer
   const effectiveBoosterBaitChance = useMemo(() => {
     if (!purchasedUpgrades['booster_bait'] || !boosterBaitGlobalUpgrade?.effects?.boosterInitialChance) return 0;
     return boosterBaitGlobalUpgrade.effects.boosterInitialChance + boosterBaitAdditionalChance;
@@ -420,14 +409,13 @@ export default function FishWorldTycoonPage() {
     return () => clearTimeout(timerId);
   }, [isBoosterActive, boosterEndTime, toast]);
 
-  // Automated Trawling Net Logic
   useEffect(() => {
     if (autoNetTimerRef.current) clearInterval(autoNetTimerRef.current);
     if (purchasedUpgrades['automated_trawling_net'] && autoNetGlobalUpgrade?.effects) {
       const interval = autoNetGlobalUpgrade.effects.autoNetIntervalMs || DEFAULT_AUTO_NET_INTERVAL_MS;
       autoNetTimerRef.current = setInterval(() => {
         const fishToCatch = autoNetCatchAmount;
-        const valuePerCatch = minigameFishValue; // Use current minigame fish value
+        const valuePerCatch = minigameFishValue; 
         setFish(prev => prev + (fishToCatch * valuePerCatch));
         if (fishToCatch > 0) {
              toast({ title: "Net Haul!", description: `Automated net caught ${fishToCatch * valuePerCatch} fish.`, variant: "default" });
@@ -460,15 +448,14 @@ export default function FishWorldTycoonPage() {
     toast({ title: "Game Reset", description: "Starting fresh!", variant: "default"});
   };
 
-  // Determine current minigame parameters based on booster state
   const currentMinigameParams = useMemo(() => {
     if (isBoosterActive && boosterBaitGlobalUpgrade?.effects) {
       return {
         maxFish: minigameMaxFish * (boosterBaitGlobalUpgrade.effects.boosterMaxFishMultiplier || 1),
         minSpawnMs: boosterBaitGlobalUpgrade.effects.boosterSpawnIntervalMs || DEFAULT_BOOSTER_SPAWN_INTERVAL_MS,
-        maxSpawnMs: (boosterBaitGlobalUpgrade.effects.boosterSpawnIntervalMs || DEFAULT_BOOSTER_SPAWN_INTERVAL_MS) + 100, // Make max slightly higher
-        lifetime: minigameFishLifetime, // Booster doesn't change lifetime by default
-        value: minigameFishValue, // Booster doesn't change value by default
+        maxSpawnMs: (boosterBaitGlobalUpgrade.effects.boosterSpawnIntervalMs || DEFAULT_BOOSTER_SPAWN_INTERVAL_MS) + 100, 
+        lifetime: minigameFishLifetime, 
+        value: minigameFishValue, 
         critChance: criticalFishChance,
       };
     }
@@ -539,7 +526,7 @@ export default function FishWorldTycoonPage() {
                       currentCrewUpgradeCost={typeState.currentCrewUpgradeCost}
                       onUpgrade={handleUpgradeFishermanType}
                       canAffordCrewUpgrade={canAffordCrewUpgrade}
-                      globalRateMultiplier={effectiveGlobalRateMultiplier} // Use effective multiplier here
+                      globalRateMultiplier={effectiveGlobalRateMultiplier} 
                     />
                   );
                 })}
@@ -587,7 +574,6 @@ export default function FishWorldTycoonPage() {
                       nextCost={nextCost}
                       canAfford={canAfford && !isMaxLevel}
                       isMaxLevel={isMaxLevel}
-                      // Pass current game state for accurate display
                       gameStats={{
                         minigameMaxFish,
                         minigameFishLifetime,
@@ -612,7 +598,53 @@ export default function FishWorldTycoonPage() {
         
         <Separator className="my-6" /> 
         
-        <footer className="w-full flex justify-center py-6">
+        <footer className="w-full flex justify-center items-center space-x-4 py-6">
+            <GameStatisticsModal
+              totalFish={fish}
+              totalFishPerSecond={totalFishPerSecond}
+              ownedFishermanTypes={ownedFishermanTypes}
+              fishermanTypesData={FISHERMAN_TYPES}
+              globalRateMultiplier={globalRateMultiplier}
+              effectiveGlobalRateMultiplier={effectiveGlobalRateMultiplier}
+              currentMinigameParams={currentMinigameParams}
+              baseMinigameStats={{
+                maxFish: minigameMaxFish,
+                lifetime: minigameFishLifetime,
+                value: minigameFishValue,
+                critChance: criticalFishChance,
+                minSpawnMs: minigameMinSpawnMs,
+                maxSpawnMs: minigameMaxSpawnMs,
+              }}
+              isBoosterActive={isBoosterActive}
+              boosterEndTime={boosterEndTime}
+              purchasedUpgrades={purchasedUpgrades}
+              boosterBaitGlobalUpgrade={boosterBaitGlobalUpgrade}
+              effectiveBoosterBaitChance={effectiveBoosterBaitChance}
+              effectiveBoosterBaitDurationMs={effectiveBoosterBaitDurationMs}
+              autoNetGlobalUpgrade={autoNetGlobalUpgrade}
+              autoNetCatchAmount={autoNetCatchAmount}
+              autoNetBaseInterval={autoNetGlobalUpgrade?.effects?.autoNetIntervalMs ?? DEFAULT_AUTO_NET_INTERVAL_MS}
+              isMarketAnalysisActive={isMarketAnalysisActive}
+              marketAnalysisEndTime={marketAnalysisEndTime}
+              marketAnalysisGlobalUpgrade={marketAnalysisGlobalUpgrade}
+              gameConfigData={{
+                  INITIAL_MINIGAME_MAX_FISH,
+                  INITIAL_MINIGAME_FISH_LIFETIME_MS,
+                  INITIAL_MINIGAME_FISH_VALUE,
+                  INITIAL_CRITICAL_FISH_CHANCE,
+                  INITIAL_MIN_SPAWN_INTERVAL_MS,
+                  INITIAL_MAX_SPAWN_INTERVAL_MS,
+                  DEFAULT_BOOSTER_BAIT_CHANCE,
+                  DEFAULT_BOOSTER_BAIT_DURATION_MS,
+                  DEFAULT_BOOSTER_SPAWN_INTERVAL_MS,
+                  DEFAULT_BOOSTER_MAX_FISH_MULTIPLIER,
+                  DEFAULT_AUTO_NET_CATCH_AMOUNT,
+                  DEFAULT_AUTO_NET_INTERVAL_MS,
+                  DEFAULT_MARKET_ANALYSIS_CHANCE,
+                  DEFAULT_MARKET_ANALYSIS_DURATION_MS,
+                  DEFAULT_MARKET_ANALYSIS_MULTIPLIER
+              }}
+            />
             <Button onClick={resetGame} variant="outline">
                 <RotateCcw className="mr-2 h-4 w-4" /> Reset Game
             </Button>
@@ -621,3 +653,5 @@ export default function FishWorldTycoonPage() {
     </div>
   );
 }
+
+    
