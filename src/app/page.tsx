@@ -134,7 +134,7 @@ export default function FishWorldTycoonPage() {
 
   const calculateFishermanInterval = useCallback((type: FishermanType, quantity: number): number => {
     if (quantity === 0) return Infinity;
-    const quantityScaledInterval = type.baseCollectionTimeMs / quantity;
+    const quantityScaledInterval = type.baseCollectionTimeMs / (quantity === 1 ? quantity : 1 + (quantity / 50));
     // The interval is primarily determined by quantity scaling,
     // but it cannot go below the global minimum collection time (0.1s).
     // A type's specific minCollectionTimeMs is respected if it's lower than quantityScaledInterval but higher than GLOBAL_MIN_COLLECTION_TIME_MS.

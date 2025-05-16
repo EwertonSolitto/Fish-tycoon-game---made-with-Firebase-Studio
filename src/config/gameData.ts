@@ -23,13 +23,13 @@ export const FISHERMAN_TYPES: FishermanType[] = [
     name: 'Novice Fisher',
     description: 'A beginner at sea. Periodically brings in a small catch.',
     icon: Users,
-    initialCost: 20,
-    costIncreaseFactor: 1.15,
-    baseCollectionAmount: 5, 
+    initialCost: 10,
+    costIncreaseFactor: 1.5,
+    baseCollectionAmount: 1, 
     baseCollectionTimeMs: 8000, 
     minCollectionTimeMs: 2000, 
-    baseUpgradeCost: 50,
-    upgradeCostIncreaseFactor: 2.0, // Upgrading doubles base collection effect
+    baseUpgradeCost: 100,
+    upgradeCostIncreaseFactor: 8, // Upgrading doubles base collection effect
   },
   {
     id: 'seasoned_captain',
@@ -37,25 +37,25 @@ export const FISHERMAN_TYPES: FishermanType[] = [
     description: 'Knows the ropes. Periodically hauls in a decent bounty.',
     icon: Ship,
     initialCost: 250,
-    costIncreaseFactor: 1.2,
+    costIncreaseFactor: 1.5,
     baseCollectionAmount: 30, 
     baseCollectionTimeMs: 15000, 
     minCollectionTimeMs: 4000,  
-    baseUpgradeCost: 300,
-    upgradeCostIncreaseFactor: 2.1, // Upgrading doubles base collection effect
+    baseUpgradeCost: 5000,
+    upgradeCostIncreaseFactor: 10, // Upgrading doubles base collection effect
   },
   {
     id: 'master_angler',
     name: 'Master Angler',
     description: 'A legend of the deep. Periodically lands a massive treasure.',
     icon: Briefcase,
-    initialCost: 1200,
-    costIncreaseFactor: 1.25,
-    baseCollectionAmount: 150,
+    initialCost: 10000,
+    costIncreaseFactor: 1.5,
+    baseCollectionAmount: 500,
     baseCollectionTimeMs: 30000, 
     minCollectionTimeMs: 8000,  
-    baseUpgradeCost: 1500,
-    upgradeCostIncreaseFactor: 2.2, // Upgrading doubles base collection effect
+    baseUpgradeCost: 10000,
+    upgradeCostIncreaseFactor: 12, // Upgrading doubles base collection effect
   },
 ];
 
@@ -85,7 +85,7 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
     name: 'Sharper Hooks',
     description: 'Improves fishing tool quality. All fishermen +10% fish collection amount.',
     icon: Settings2,
-    cost: 100,
+    cost: 1000,
     rateMultiplierIncrease: 0.1,
   },
   {
@@ -93,7 +93,7 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
     name: 'Sonar Technology',
     description: 'Advanced fish finding. All fishermen +25% fish collection amount.',
     icon: Zap,
-    cost: 500,
+    cost: 25000,
     rateMultiplierIncrease: 0.25,
   },
   {
@@ -101,7 +101,7 @@ export const GLOBAL_UPGRADES_DATA: GlobalUpgradeData[] = [
     name: 'Bigger Boats',
     description: 'Larger capacity for catches. All fishermen +50% fish collection amount.',
     icon: PackagePlusIcon,
-    cost: 2000,
+    cost: 100000,
     rateMultiplierIncrease: 0.5,
   },
   {
@@ -160,12 +160,21 @@ export interface MinigameUpgradeData {
 
 export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
   {
+    id: 'increase_value',
+    name: 'Lucky Catch',
+    description: 'Increases the number of fish awarded per click in the minigame.',
+    icon: CircleDollarSign,
+    initialCost: 10,
+    costIncreaseFactor: 1.5,
+    effect: { type: 'value', value: 1 },
+  },
+  {
     id: 'increase_max_fish',
     name: 'More Crowded Waters',
     description: 'Increases the max number of fish that can appear in the minigame.',
     icon: UsersRound,
-    initialCost: 300,
-    costIncreaseFactor: 1.5,
+    initialCost: 100,
+    costIncreaseFactor: 3,
     effect: { type: 'maxFish', value: 1 },
   },
   {
@@ -174,17 +183,8 @@ export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
     description: 'Increases how long fish stay on screen in the minigame.',
     icon: Timer,
     initialCost: 250,
-    costIncreaseFactor: 1.4,
+    costIncreaseFactor: 2.25,
     effect: { type: 'lifetime', value: 500 }, // 0.5 seconds
-  },
-  {
-    id: 'increase_value',
-    name: 'Lucky Catch',
-    description: 'Increases the number of fish awarded per click in the minigame.',
-    icon: CircleDollarSign,
-    initialCost: 400,
-    costIncreaseFactor: 1.6,
-    effect: { type: 'value', value: 1 },
   },
   {
     id: 'increase_critical_chance',
@@ -240,7 +240,7 @@ export const MINIGAME_UPGRADES_DATA: MinigameUpgradeData[] = [
 ];
 
 
-export const INITIAL_FISH_COUNT = 20;
+export const INITIAL_FISH_COUNT = 0;
 export const GAME_TICK_INTERVAL_MS = 200; 
 export const GLOBAL_MIN_COLLECTION_TIME_MS = 100; // Absolute minimum collection time for any crew (0.1 seconds)
 
